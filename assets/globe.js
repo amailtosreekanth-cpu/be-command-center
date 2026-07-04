@@ -25,7 +25,7 @@ window.BEGlobe = (function() {
   function build(el, indiaFeatures) {
     globeInstance = Globe()(el)
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
       .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true)
       .atmosphereColor('#FF005D')
