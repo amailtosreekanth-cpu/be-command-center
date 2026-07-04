@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BROKEN ENGLISH · ACADEMICS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--k1:#FF005D;--k2:#FF6A00;--bg:#0a0a0d;--tx:#F2F2F0;--tx2:rgba(255,255,255,.55);--tx3:rgba(255,255,255,.28);
+--green:#00FF88;--blue:#00B8FF;--purple:#B95CFF;--yellow:#FFC400;--gk:linear-gradient(135deg,#FF005D,#FF6A00);}
+body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;min-height:100vh;}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.lbox{width:380px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:36px;backdrop-filter:blur(20px);}
+.lbox h1{font-family:Rajdhani;font-size:22px;margin-bottom:4px;}
+.lbox p{color:var(--tx3);font-size:12px;margin-bottom:24px;}
+.lbox input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--tx);margin-bottom:12px;font-size:14px;}
+.lbox button{width:100%;padding:13px;border:none;border-radius:10px;background:var(--gk);color:#fff;font-weight:700;cursor:pointer;font-size:14px;}
+.lerr{color:var(--k1);font-size:12px;margin-top:10px;display:none;text-align:center;}
+#app{display:none;padding:24px;max-width:1300px;margin:0 auto;}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.topbar h1{font-family:Rajdhani;font-size:22px;}
+.topbar .role-pill{font-size:10px;padding:4px 12px;border-radius:99px;background:rgba(255,0,93,.15);color:var(--k1);font-weight:700;text-transform:uppercase;}
+.logout{background:transparent;border:1px solid rgba(255,255,255,.15);color:var(--tx2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;}
+.card .lbl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.card .val{font-size:26px;font-weight:700;}
+.section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px;}
+.section h2{font-family:Rajdhani;font-size:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.section h2 button{font-size:11px;padding:7px 14px;border:none;border-radius:8px;background:var(--gk);color:#fff;cursor:pointer;font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:10px;color:var(--tx3);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);}
+td{padding:10px 10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);}
+.badge{font-size:10px;padding:3px 9px;border-radius:6px;font-weight:600;}
+.b-active{background:rgba(0,255,136,.12);color:var(--green);}
+.b-inactive{background:rgba(255,59,48,.12);color:#FF3B30;}
+.b-part{background:rgba(255,196,0,.12);color:var(--yellow);}
+.act-btn{background:transparent;border:1px solid rgba(255,255,255,.15);color:var(--tx2);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;margin-right:4px;}
+.act-btn:hover{border-color:var(--k1);color:var(--tx);}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:200;}
+.modal-bg.on{display:flex;}
+.modal{background:#141418;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px;width:380px;}
+.modal h3{font-family:Rajdhani;margin-bottom:16px;}
+.modal input,.modal select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:var(--tx);margin-bottom:10px;font-size:13px;}
+.modal-actions{display:flex;gap:8px;margin-top:12px;}
+.modal-actions button{flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px;}
+.btn-save{background:var(--gk);color:#fff;}
+.btn-cancel{background:rgba(255,255,255,.08);color:var(--tx2);}
+.empty{color:var(--tx3);font-size:12px;padding:16px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lbox">
+    <h1>Academics Portal</h1>
+    <p>Broken English · Founder / Academic Head / Trainer</p>
+    <input id="lu" placeholder="Username"/>
+    <input id="lp" type="password" placeholder="Password"/>
+    <button onclick="doLogin()">Sign In</button>
+    <div class="lerr" id="lerr">Invalid username or password.</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div>
+      <h1 id="greeting">—</h1>
+      <span class="role-pill" id="rolepill">—</span>
+    </div>
+    <button class="logout" onclick="logout()">Sign Out</button>
+  </div>
+
+  <div class="grid" id="statgrid"></div>
+
+  <!-- FOUNDER / HEAD VIEW -->
+  <div id="headView" style="display:none">
+    <div class="section">
+      <h2>Trainers <button onclick="openModal('trainer')">+ Add Trainer</button></h2>
+      <table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="trainerTable"></tbody></table>
+    </div>
+    <div class="section">
+      <h2>Batches <button onclick="openModal('batch')">+ Create Batch</button></h2>
+      <table><thead><tr><th>Name</th><th>Trainer</th><th>Schedule</th><th>Type</th><th>Actions</th></tr></thead>
+        <tbody id="batchTable"></tbody></table>
+    </div>
+    <div class="section">
+      <h2>Assign Task <button onclick="openModal('assignment')">+ New Task</button></h2>
+      <table><thead><tr><th>Trainer</th><th>Task</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody id="assignTable"></tbody></table>
+    </div>
+  </div>
+
+  <!-- TRAINER VIEW -->
+  <div id="trainerView" style="display:none">
+    <div class="section">
+      <h2>My Batches</h2>
+      <table><thead><tr><th>Batch</th><th>Schedule</th><th>Students</th></tr></thead>
+        <tbody id="myBatches"></tbody></table>
+    </div>
+    <div class="section">
+      <h2>My Assigned Tasks</h2>
+      <table><thead><tr><th>Task</th><th>Assigned By</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody id="myTasks"></tbody></table>
+    </div>
+    <div class="section">
+      <h2>Log a Session <button onclick="openModal('session')">+ Log Session</button></h2>
+      <table><thead><tr><th>Student</th><th>Date</th><th>Type</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody id="myLogs"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modalTrainer"><div class="modal">
+  <h3>Add Trainer</h3>
+  <input id="m_t_name" placeholder="Trainer name"/>
+  <select id="m_t_type"><option value="full-time">Full-time</option><option value="part-time">Part-time</option></select>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('trainer')">Cancel</button><button class="btn-save" onclick="saveTrainer()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modalBatch"><div class="modal">
+  <h3>Create Batch</h3>
+  <input id="m_b_name" placeholder="Batch name"/>
+  <select id="m_b_trainer"></select>
+  <input id="m_b_schedule" placeholder="e.g. Mon,Wed 8PM"/>
+  <select id="m_b_type"><option value="group">Group</option><option value="one-on-one">1-on-1</option><option value="elite">Elite</option></select>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batch')">Cancel</button><button class="btn-save" onclick="saveBatch()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modalAssignment"><div class="modal">
+  <h3>Assign Task</h3>
+  <select id="m_a_trainer"></select>
+  <input id="m_a_task" placeholder="Task description"/>
+  <input id="m_a_due" type="date"/>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('assignment')">Cancel</button><button class="btn-save" onclick="saveAssignment()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modalSession"><div class="modal">
+  <h3>Log Session</h3>
+  <select id="m_s_batch"></select>
+  <input id="m_s_student" placeholder="Student name"/>
+  <input id="m_s_date" type="date"/>
+  <select id="m_s_type"><option value="group">Group</option><option value="one-on-one">1-on-1</option><option value="masterclass">Masterclass</option><option value="activity">Activity</option></select>
+  <select id="m_s_status"><option value="completed">Completed</option><option value="pending">Pending</option><option value="absent">Absent</option></select>
+  <input id="m_s_notes" placeholder="Session summary notes"/>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('session')">Cancel</button><button class="btn-save" onclick="saveSession()">Save</button></div>
+</div></div>
+
+<script>
+const SUPABASE_URL = 'https://baazubvfsrpmbfmrzumw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+
+async function doLogin(){
+  const u = document.getElementById('lu').value.trim().toLowerCase();
+  const p = document.getElementById('lp').value.trim();
+  const { data, error } = await sb.from('roles').select('*').eq('username', u).eq('password', p).single();
+  if (error || !data) {
+    document.getElementById('lerr').style.display = 'block';
+    return;
+  }
+  currentUser = data;
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  boot();
+}
+
+function logout(){
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('lu').value = ''; document.getElementById('lp').value='';
+}
+
+async function boot(){
+  document.getElementById('greeting').textContent = 'Welcome, ' + currentUser.name;
+  document.getElementById('rolepill').textContent = currentUser.role.replace('_',' ');
+
+  if (currentUser.role === 'founder' || currentUser.role === 'academic_head') {
+    document.getElementById('headView').style.display = 'block';
+    await loadHeadView();
+  } else {
+    document.getElementById('trainerView').style.display = 'block';
+    await loadTrainerView();
+  }
+  await loadStats();
+}
+
+async function loadStats(){
+  const { data: trainers } = await sb.from('trainers').select('*').eq('status','active');
+  const { data: batches } = await sb.from('batches').select('*');
+  const { data: students } = await sb.from('students').select('*');
+  const { data: sessions } = await sb.from('sessions').select('*').eq('status','completed');
+  document.getElementById('statgrid').innerHTML = `
+    <div class="card"><div class="lbl">Active Trainers</div><div class="val">${trainers?.length||0}</div></div>
+    <div class="card"><div class="lbl">Total Batches</div><div class="val">${batches?.length||0}</div></div>
+    <div class="card"><div class="lbl">Total Students</div><div class="val">${students?.length||0}</div></div>
+    <div class="card"><div class="lbl">Sessions Completed</div><div class="val">${sessions?.length||0}</div></div>
+  `;
+}
+
+async function loadHeadView(){
+  const { data: trainers } = await sb.from('trainers').select('*').order('created_at');
+  document.getElementById('trainerTable').innerHTML = (trainers||[]).map(t => `
+    <tr><td>${t.name}</td><td>${t.type}</td>
+    <td><span class="badge ${t.status==='active'?'b-active':'b-inactive'}">${t.status}</span></td>
+    <td><button class="act-btn" onclick="toggleTrainer('${t.id}','${t.status}')">${t.status==='active'?'Deactivate':'Activate'}</button></td></tr>
+  `).join('') || '<tr><td colspan="4" class="empty">No trainers yet</td></tr>';
+
+  const { data: batches } = await sb.from('batches').select('*, trainers(name)').order('created_at');
+  document.getElementById('batchTable').innerHTML = (batches||[]).map(b => `
+    <tr><td>${b.name}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td><td>${b.batch_type}</td>
+    <td><button class="act-btn" onclick="deleteBatch('${b.id}')">Delete</button></td></tr>
+  `).join('') || '<tr><td colspan="5" class="empty">No batches yet</td></tr>';
+
+  const { data: assigns } = await sb.from('assignments').select('*, trainers(name)').order('created_at',{ascending:false});
+  document.getElementById('assignTable').innerHTML = (assigns||[]).map(a => `
+    <tr><td>${a.trainers?.name||'—'}</td><td>${a.task}</td><td>${a.due_date||'—'}</td><td>${a.status}</td></tr>
+  `).join('') || '<tr><td colspan="4" class="empty">No tasks assigned</td></tr>';
+
+  await populateTrainerSelects();
+}
+
+async function loadTrainerView(){
+  const { data: myTrainer } = await sb.from('trainers').select('*').ilike('name', currentUser.name).single();
+  if (!myTrainer) return;
+
+  const { data: batches } = await sb.from('batches').select('*, students(id)').eq('trainer_id', myTrainer.id);
+  document.getElementById('myBatches').innerHTML = (batches||[]).map(b => `
+    <tr><td>${b.name}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td><td>${b.students?.length||0}</td></tr>
+  `).join('') || '<tr><td colspan="3" class="empty">No batches assigned yet</td></tr>';
+
+  const { data: tasks } = await sb.from('assignments').select('*').eq('trainer_id', myTrainer.id).order('due_date');
+  document.getElementById('myTasks').innerHTML = (tasks||[]).map(t => `
+    <tr><td>${t.task}</td><td>${t.assigned_by||'—'}</td><td>${t.due_date||'—'}</td><td>${t.status}</td></tr>
+  `).join('') || '<tr><td colspan="4" class="empty">No tasks assigned</td></tr>';
+
+  const { data: logs } = await sb.from('sessions').select('*, students(name)').eq('logged_by', currentUser.name).order('session_date',{ascending:false}).limit(20);
+  document.getElementById('myLogs').innerHTML = (logs||[]).map(l => `
+    <tr><td>${l.students?.name||'—'}</td><td>${l.session_date}</td><td>${l.type}</td><td>${l.status}</td><td>${l.notes||''}</td></tr>
+  `).join('') || '<tr><td colspan="5" class="empty">No sessions logged yet</td></tr>';
+
+  const batchSelect = document.getElementById('m_s_batch');
+  batchSelect.innerHTML = (batches||[]).map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+  window._myTrainerId = myTrainer.id;
+}
+
+async function populateTrainerSelects(){
+  const { data: trainers } = await sb.from('trainers').select('*').eq('status','active');
+  const opts = (trainers||[]).map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('m_b_trainer').innerHTML = opts;
+  document.getElementById('m_a_trainer').innerHTML = opts;
+}
+
+function openModal(type){ document.getElementById('modal'+cap(type)).classList.add('on'); }
+function closeModal(type){ document.getElementById('modal'+cap(type)).classList.remove('on'); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+async function saveTrainer(){
+  const name = document.getElementById('m_t_name').value.trim();
+  const type = document.getElementById('m_t_type').value;
+  if(!name) return;
+  await sb.from('trainers').insert({ name, type, added_by: currentUser.name });
+  closeModal('trainer'); document.getElementById('m_t_name').value='';
+  await loadHeadView(); await loadStats();
+}
+
+async function toggleTrainer(id, status){
+  const newStatus = status === 'active' ? 'inactive' : 'active';
+  await sb.from('trainers').update({ status: newStatus }).eq('id', id);
+  await loadHeadView(); await loadStats();
+}
+
+async function saveBatch(){
+  const name = document.getElementById('m_b_name').value.trim();
+  const trainer_id = document.getElementById('m_b_trainer').value;
+  const day_pattern = document.getElementById('m_b_schedule').value.trim();
+  const batch_type = document.getElementById('m_b_type').value;
+  if(!name) return;
+  await sb.from('batches').insert({ name, trainer_id, day_pattern, batch_type });
+  closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_schedule').value='';
+  await loadHeadView(); await loadStats();
+}
+
+async function deleteBatch(id){
+  await sb.from('batches').delete().eq('id', id);
+  await loadHeadView(); await loadStats();
+}
+
+async function saveAssignment(){
+  const trainer_id = document.getElementById('m_a_trainer').value;
+  const task = document.getElementById('m_a_task').value.trim();
+  const due_date = document.getElementById('m_a_due').value || null;
+  if(!task) return;
+  await sb.from('assignments').insert({ trainer_id, task, due_date, assigned_by: currentUser.name });
+  closeModal('assignment'); document.getElementById('m_a_task').value='';
+  await loadHeadView();
+}
+
+async function saveSession(){
+  const batch_id = document.getElementById('m_s_batch').value;
+  const studentName = document.getElementById('m_s_student').value.trim();
+  const session_date = document.getElementById('m_s_date').value;
+  const type = document.getElementById('m_s_type').value;
+  const status = document.getElementById('m_s_status').value;
+  const notes = document.getElementById('m_s_notes').value.trim();
+  if(!studentName || !session_date) return;
+
+  let { data: existing } = await sb.from('students').select('id').ilike('name', studentName).eq('batch_id', batch_id).maybeSingle();
+  let student_id = existing?.id;
+  if(!student_id){
+    const { data: newStudent } = await sb.from('students').insert({ name: studentName, batch_id }).select().single();
+    student_id = newStudent.id;
+  }
+  await sb.from('sessions').insert({ student_id, batch_id, session_date, type, status, notes, logged_by: currentUser.name });
+  closeModal('session');
+  document.getElementById('m_s_student').value=''; document.getElementById('m_s_notes').value='';
+  await loadTrainerView(); await loadStats();
+}
+</script>
+</body>
+</html>
