@@ -7,32 +7,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --k1:#ed1f51;--k2:#f05825;
-  --bg:#050505;
+  --k1:#ed1f51;--k2:#f05825;--bg:#050505;
   --tx:#F2F2F0;--tx2:rgba(255,255,255,.55);--tx3:rgba(255,255,255,.28);
   --green:#00FF88;--blue:#00B8FF;--purple:#B95CFF;--yellow:#FFC400;
-  --gk:linear-gradient(135deg,#ed1f51,#f05825);
-  --bd:rgba(255,255,255,.08);
+  --gk:linear-gradient(135deg,#ed1f51,#f05825);--bd:rgba(255,255,255,.08);
 }
 body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;min-height:100vh;
   background-image:radial-gradient(ellipse 60% 50% at 10% 0%,rgba(237,31,81,.1),transparent 60%),
   radial-gradient(ellipse 50% 40% at 90% 100%,rgba(240,88,37,.07),transparent 60%);}
-#login{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .lbox{width:400px;background:linear-gradient(145deg,rgba(20,15,20,.9),rgba(10,8,10,.96));border:1px solid rgba(237,31,81,.18);border-radius:22px;padding:40px;backdrop-filter:blur(30px);box-shadow:0 30px 80px rgba(0,0,0,.8);}
+.lbox img{height:34px;margin-bottom:22px;}
 .lbox h1{font-family:Rajdhani,sans-serif;font-size:24px;margin-bottom:4px;font-weight:700;}
 .lbox p{color:var(--tx3);font-size:12px;margin-bottom:26px;}
-.lbox input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:13px 15px;color:var(--tx);margin-bottom:12px;font-size:14px;outline:none;transition:border-color .2s;}
+.lbox input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:13px 15px;color:var(--tx);margin-bottom:12px;font-size:14px;outline:none;}
 .lbox input:focus{border-color:rgba(237,31,81,.5);}
 .lbox button{width:100%;padding:14px;border:none;border-radius:11px;background:var(--gk);color:#fff;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 8px 30px rgba(237,31,81,.35);}
 .lerr{color:var(--k1);font-size:12px;margin-top:12px;display:none;text-align:center;}
-#app{display:none;padding:28px;max-width:1360px;margin:0 auto;}
+#app{display:none;padding:28px;max-width:1400px;margin:0 auto;}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;}
-.topbar h1{font-family:Rajdhani,sans-serif;font-size:24px;font-weight:700;}
-.topbar .role-pill{font-size:10px;padding:5px 13px;border-radius:99px;background:rgba(237,31,81,.15);border:1px solid rgba(237,31,81,.3);color:var(--k1);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-left:10px;}
-.logout{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:var(--tx2);padding:9px 18px;border-radius:9px;cursor:pointer;font-size:12px;backdrop-filter:blur(10px);}
+.topbar-left{display:flex;align-items:center;gap:14px;}
+.topbar img{height:28px;}
+.topbar h1{font-family:Rajdhani,sans-serif;font-size:22px;font-weight:700;}
+.role-pill{font-size:10px;padding:5px 13px;border-radius:99px;background:rgba(237,31,81,.15);border:1px solid rgba(237,31,81,.3);color:var(--k1);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-left:10px;}
+.logout{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:var(--tx2);padding:9px 18px;border-radius:9px;cursor:pointer;font-size:12px;}
 .logout:hover{border-color:var(--k1);color:var(--tx);}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
 .card{background:linear-gradient(145deg,rgba(20,15,20,.85),rgba(10,8,10,.92));border:1px solid var(--bd);border-radius:15px;padding:19px;position:relative;overflow:hidden;backdrop-filter:blur(18px);transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
@@ -43,35 +45,39 @@ body{background:var(--bg);color:var(--tx);font-family:Inter,sans-serif;min-heigh
 .section{background:linear-gradient(145deg,rgba(18,14,18,.8),rgba(8,6,8,.9));border:1px solid var(--bd);border-radius:18px;padding:22px;margin-bottom:18px;backdrop-filter:blur(20px);}
 .section h2{font-family:Rajdhani,sans-serif;font-size:17px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;letter-spacing:.02em;}
 .section h2 button{font-size:11px;padding:9px 16px;border:none;border-radius:9px;background:var(--gk);color:#fff;cursor:pointer;font-weight:700;box-shadow:0 6px 20px rgba(237,31,81,.3);}
+.section h2 .tag{font-size:9px;padding:4px 10px;border-radius:7px;background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.25);font-weight:700;text-transform:uppercase;}
 table{width:100%;border-collapse:collapse;}
 th{text-align:left;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;border-bottom:1px solid var(--bd);}
 td{padding:12px 12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);}
 tr:hover td{background:rgba(255,255,255,.02);}
-.badge{font-size:10px;padding:4px 10px;border-radius:7px;font-weight:700;letter-spacing:.02em;}
+.badge{font-size:10px;padding:4px 10px;border-radius:7px;font-weight:700;}
 .b-active{background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.25);}
 .b-inactive{background:rgba(237,31,81,.12);color:var(--k1);border:1px solid rgba(237,31,81,.25);}
-.act-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.13);color:var(--tx2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;margin-right:4px;backdrop-filter:blur(8px);transition:all .15s;}
-.act-btn:hover{border-color:var(--k1);color:var(--tx);background:rgba(237,31,81,.08);}
+.act-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.13);color:var(--tx2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;margin-right:4px;}
+.act-btn:hover{border-color:var(--k1);color:var(--tx);}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(6px);}
 .modal-bg.on{display:flex;}
 .modal{background:linear-gradient(145deg,#161116,#0a080a);border:1px solid rgba(237,31,81,.2);border-radius:18px;padding:26px;width:400px;box-shadow:0 30px 80px rgba(0,0,0,.9);}
 .modal h3{font-family:Rajdhani,sans-serif;margin-bottom:18px;font-size:18px;font-weight:700;}
 .modal input,.modal select{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:11px 13px;color:var(--tx);margin-bottom:11px;font-size:13px;outline:none;}
-.modal input:focus,.modal select:focus{border-color:rgba(237,31,81,.5);}
 .modal-actions{display:flex;gap:9px;margin-top:14px;}
 .modal-actions button{flex:1;padding:11px;border-radius:9px;border:none;cursor:pointer;font-weight:700;font-size:13px;}
 .btn-save{background:var(--gk);color:#fff;}
 .btn-cancel{background:rgba(255,255,255,.06);color:var(--tx2);}
 .empty{color:var(--tx3);font-size:12px;padding:20px;text-align:center;}
 .subhead{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin:22px 0 10px;padding-left:2px;}
+.loading{color:var(--tx3);font-size:12px;padding:20px;text-align:center;}
+.warn-box{background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6;}
+.warn-box b{color:var(--yellow);}
 </style>
 </head>
 <body>
 
 <div id="login">
   <div class="lbox">
+    <img src="brand/logo-full.png" alt="Broken English"/>
     <h1>Academics Portal</h1>
-    <p>Broken English · Founder / Academic Head / Trainer</p>
+    <p>Founder / Academic Head / Trainer</p>
     <input id="lu" placeholder="Username"/>
     <input id="lp" type="password" placeholder="Password"/>
     <button onclick="doLogin()">Sign In</button>
@@ -81,16 +87,15 @@ tr:hover td{background:rgba(255,255,255,.02);}
 
 <div id="app">
   <div class="topbar">
-    <div>
-      <h1 id="greeting">—</h1>
-      <span class="role-pill" id="rolepill">—</span>
+    <div class="topbar-left">
+      <img src="brand/logo-mark.png" alt="BE"/>
+      <div><h1 id="greeting">—</h1><span class="role-pill" id="rolepill">—</span></div>
     </div>
     <button class="logout" onclick="logout()">Sign Out</button>
   </div>
 
   <div class="grid" id="statgrid"></div>
 
-  <!-- FOUNDER / HEAD VIEW -->
   <div id="headView" style="display:none">
     <div class="section">
       <h2>Trainers <button onclick="openModal('trainer')">+ Add Trainer</button></h2>
@@ -109,7 +114,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
-  <!-- TRAINER VIEW -->
   <div id="trainerView" style="display:none">
     <div class="section">
       <h2>My Batches</h2>
@@ -127,9 +131,27 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <tbody id="myLogs"></tbody></table>
     </div>
   </div>
+
+  <!-- LIVE GOOGLE SHEET DATA — visible to everyone -->
+  <div class="section">
+    <h2>Master Student List <span class="tag">Live from Sheet</span></h2>
+    <div id="sheetStudents" class="loading">Loading live data from Google Sheet…</div>
+  </div>
+  <div class="section">
+    <h2>Trainer Weekly Schedule <span class="tag">Live from Sheet</span></h2>
+    <div id="sheetSchedule" class="loading">Loading live data from Google Sheet…</div>
+  </div>
+  <div class="section">
+    <h2>Batch / Session Tracking <span class="tag">Live from Sheet</span></h2>
+    <div id="sheetBatches" class="loading">Loading live data from Google Sheet…</div>
+  </div>
+  <div class="section">
+    <h2>Media / Production Suite</h2>
+    <div class="warn-box"><b>Heads up:</b> Production Suite is a static site, not a database — there's nothing to "pull" from it via API. I can link to it directly, or if you want real live media stats here (videos edited, reels pending, etc.), that data needs to live in a Google Sheet or Supabase table like Academics does. Tell me which and I'll wire it.</div>
+    <a href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank" class="act-btn" style="display:inline-block">Open Production Suite →</a>
+  </div>
 </div>
 
-<!-- MODALS -->
 <div class="modal-bg" id="modalTrainer"><div class="modal">
   <h3>Add Trainer</h3>
   <input id="m_t_name" placeholder="Trainer name"/>
@@ -170,16 +192,29 @@ const SUPABASE_URL = 'https://baazubvfsrpmbfmrzumw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Real Google Sheet IDs you shared — public CSV export
+const SHEETS = {
+  students: '1Q4cHAm4LrhLM_EcDt0v_X2te038OZM267Q3W5ZeD5XI',
+  schedule: '1TfL61kl3VeTk7vYhl4IgTgtpi3yhicdCbUPr9QMydBw',
+  batches:  '1rmhxfNZxAEupBQvLIzDY71TurYxSJkRrO4zY7ZxHUTE'
+};
+
 let currentUser = null;
+
+// ══ HARD PERMISSION GUARD — checked inside every write function, not just hidden buttons ══
+function requireHeadAccess(){
+  if (!currentUser || (currentUser.role !== 'founder' && currentUser.role !== 'academic_head')) {
+    alert('Access denied. Only the Founder or Academic Head can do this.');
+    return false;
+  }
+  return true;
+}
 
 async function doLogin(){
   const u = document.getElementById('lu').value.trim().toLowerCase();
   const p = document.getElementById('lp').value.trim();
   const { data, error } = await sb.from('roles').select('*').eq('username', u).eq('password', p).single();
-  if (error || !data) {
-    document.getElementById('lerr').style.display = 'block';
-    return;
-  }
+  if (error || !data) { document.getElementById('lerr').style.display = 'block'; return; }
   currentUser = data;
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -190,7 +225,7 @@ function logout(){
   currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
-  document.getElementById('lu').value = ''; document.getElementById('lp').value='';
+  document.getElementById('lu').value=''; document.getElementById('lp').value='';
 }
 
 async function boot(){
@@ -200,10 +235,8 @@ async function boot(){
   if (currentUser.role === 'founder' || currentUser.role === 'academic_head') {
     document.getElementById('headView').style.display = 'block';
     await loadHeadView();
-    // Academic heads who also train (e.g. Josephine) see their own trainer panel too
     if (currentUser.role === 'academic_head') {
       document.getElementById('trainerView').style.display = 'block';
-      document.querySelector('#trainerView .subhead')?.remove();
       const divider = document.createElement('div');
       divider.className = 'subhead';
       divider.textContent = 'My Own Teaching Load (as Trainer)';
@@ -215,6 +248,7 @@ async function boot(){
     await loadTrainerView();
   }
   await loadStats();
+  loadGoogleSheets();
 }
 
 async function loadStats(){
@@ -283,11 +317,15 @@ async function populateTrainerSelects(){
   document.getElementById('m_a_trainer').innerHTML = opts;
 }
 
-function openModal(type){ document.getElementById('modal'+cap(type)).classList.add('on'); }
+function openModal(type){
+  if ((type==='trainer'||type==='batch'||type==='assignment') && !requireHeadAccess()) return;
+  document.getElementById('modal'+cap(type)).classList.add('on');
+}
 function closeModal(type){ document.getElementById('modal'+cap(type)).classList.remove('on'); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
 async function saveTrainer(){
+  if (!requireHeadAccess()) return;
   const name = document.getElementById('m_t_name').value.trim();
   const type = document.getElementById('m_t_type').value;
   if(!name) return;
@@ -297,12 +335,14 @@ async function saveTrainer(){
 }
 
 async function toggleTrainer(id, status){
+  if (!requireHeadAccess()) return;
   const newStatus = status === 'active' ? 'inactive' : 'active';
   await sb.from('trainers').update({ status: newStatus }).eq('id', id);
   await loadHeadView(); await loadStats();
 }
 
 async function saveBatch(){
+  if (!requireHeadAccess()) return;
   const name = document.getElementById('m_b_name').value.trim();
   const trainer_id = document.getElementById('m_b_trainer').value;
   const day_pattern = document.getElementById('m_b_schedule').value.trim();
@@ -314,11 +354,13 @@ async function saveBatch(){
 }
 
 async function deleteBatch(id){
+  if (!requireHeadAccess()) return;
   await sb.from('batches').delete().eq('id', id);
   await loadHeadView(); await loadStats();
 }
 
 async function saveAssignment(){
+  if (!requireHeadAccess()) return;
   const trainer_id = document.getElementById('m_a_trainer').value;
   const task = document.getElementById('m_a_task').value.trim();
   const due_date = document.getElementById('m_a_due').value || null;
@@ -329,6 +371,7 @@ async function saveAssignment(){
 }
 
 async function saveSession(){
+  // any logged-in trainer may log their own session — no head-only guard needed here
   const batch_id = document.getElementById('m_s_batch').value;
   const studentName = document.getElementById('m_s_student').value.trim();
   const session_date = document.getElementById('m_s_date').value;
@@ -347,6 +390,42 @@ async function saveSession(){
   closeModal('session');
   document.getElementById('m_s_student').value=''; document.getElementById('m_s_notes').value='';
   await loadTrainerView(); await loadStats();
+}
+
+// ══ LIVE GOOGLE SHEET FETCH — renders real rows as pictorial cards ══
+function sheetCsvUrl(id){
+  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+}
+
+function renderSheetTable(targetId, rows, maxRows=15){
+  const el = document.getElementById(targetId);
+  if (!rows || rows.length < 2) { el.innerHTML = '<div class="empty">No data found — sheet may be empty or link permissions changed.</div>'; return; }
+  const headers = rows[0];
+  const body = rows.slice(1, maxRows+1).filter(r => r.some(c => c && c.trim()));
+  el.innerHTML = `
+    <table>
+      <thead><tr>${headers.map(h=>`<th>${h||''}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${body.map(r => `<tr>${headers.map((_,i)=>`<td>${r[i]||''}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:10px;color:var(--tx3);margin-top:10px">Showing ${body.length} of ${rows.length-1} rows — live from Google Sheet</div>
+  `;
+}
+
+function loadGoogleSheets(){
+  Papa.parse(sheetCsvUrl(SHEETS.students), { download:true,
+    complete: r => renderSheetTable('sheetStudents', r.data),
+    error: () => document.getElementById('sheetStudents').innerHTML = '<div class="empty">Could not load sheet. Check sharing is set to "Anyone with link".</div>'
+  });
+  Papa.parse(sheetCsvUrl(SHEETS.schedule), { download:true,
+    complete: r => renderSheetTable('sheetSchedule', r.data),
+    error: () => document.getElementById('sheetSchedule').innerHTML = '<div class="empty">Could not load sheet. Check sharing is set to "Anyone with link".</div>'
+  });
+  Papa.parse(sheetCsvUrl(SHEETS.batches), { download:true,
+    complete: r => renderSheetTable('sheetBatches', r.data),
+    error: () => document.getElementById('sheetBatches').innerHTML = '<div class="empty">Could not load sheet. Check sharing is set to "Anyone with link".</div>'
+  });
 }
 </script>
 </body>
