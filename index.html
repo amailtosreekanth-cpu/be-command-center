@@ -3,271 +3,872 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>BROKEN ENGLISH · COMMAND CENTER</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<title>BROKEN ENGLISH · FOUNDER OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Barlow:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
-<link rel="stylesheet" href="assets/style.css"/>
-<script src="https://unpkg.com/globe.gl"></script>
-<script src="https://unpkg.com/topojson-client@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+/* ═══════════════════════ TOKENS ═══════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --void:#040308;
+  --pink:#ed1f51;
+  --ember:#f05825;
+  --bone:#f4f2ef;
+  --steel:rgba(255,255,255,.52);
+  --ghost:rgba(255,255,255,.26);
+  --line:rgba(255,255,255,.07);
+  --ok:#35e08c; --warn:#ffc24b; --bad:#ff4d5e; --info:#4db8ff;
+  --grad:linear-gradient(120deg,#ed1f51 10%,#f05825 90%);
+  --panel:linear-gradient(160deg,rgba(24,16,22,.72),rgba(9,7,11,.88));
+}
+html{scrollbar-color:rgba(255,255,255,.14) transparent;}
+body{
+  background:var(--void);color:var(--bone);
+  font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 55% 40% at 12% -5%,rgba(237,31,81,.13),transparent 62%),
+    radial-gradient(ellipse 45% 38% at 95% 105%,rgba(240,88,37,.09),transparent 60%);
+}
+::selection{background:rgba(237,31,81,.4);}
+.mono-num{font-variant-numeric:tabular-nums;}
+.eyebrow{font-family:Barlow,sans-serif;font-weight:600;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ghost);}
+h1,h2,h3{font-family:Montserrat,sans-serif;}
+
+/* faint engineering grid */
+.grid-layer{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(237,31,81,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(237,31,81,.028) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 90% 80% at 50% 30%,black 35%,transparent 100%);}
+/* ghost chevron watermark */
+.chevron-ghost{position:fixed;top:110px;right:-60px;width:420px;opacity:.05;z-index:0;pointer-events:none;user-select:none;}
+@media (max-width:1100px){.chevron-ghost{display:none;}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;}
+}
+
+/* ═══════════════════════ LOGIN ═══════════════════════ */
+#login{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;background:var(--void);
+  background-image:radial-gradient(ellipse 60% 45% at 50% 0%,rgba(237,31,81,.14),transparent 65%);}
+.lbox{width:min(410px,92vw);background:var(--panel);border:1px solid rgba(237,31,81,.22);border-radius:22px;padding:42px 38px;position:relative;
+  backdrop-filter:blur(28px);box-shadow:0 40px 110px rgba(0,0,0,.85),0 0 90px rgba(237,31,81,.06);}
+.lbox::before{content:'';position:absolute;top:0;left:14%;right:14%;height:1px;background:linear-gradient(90deg,transparent,rgba(237,31,81,.75),rgba(240,88,37,.6),transparent);}
+.l-logo{height:40px;display:block;margin:0 0 6px;}
+.l-word{font-family:Montserrat,sans-serif;font-weight:800;font-size:21px;letter-spacing:.01em;display:none;}
+.l-word b{color:var(--pink);}
+.lbox .eyebrow{margin:14px 0 26px;color:var(--steel);}
+.l-inp{width:100%;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  padding:14px 16px;color:var(--bone);font:inherit;font-size:14px;outline:none;margin-bottom:12px;transition:border-color .2s,box-shadow .2s;}
+.l-inp:focus{border-color:rgba(237,31,81,.6);box-shadow:0 0 0 3px rgba(237,31,81,.12);}
+.l-btn{width:100%;padding:15px;border:none;border-radius:12px;background:var(--grad);color:#fff;
+  font-family:Barlow,sans-serif;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 10px 34px rgba(237,31,81,.35);transition:transform .12s,opacity .15s;}
+.l-btn:hover{opacity:.92;}
+.l-btn:active{transform:scale(.985);}
+.l-btn:disabled{opacity:.55;cursor:wait;}
+.l-msg{font-size:12px;margin-top:14px;text-align:center;min-height:18px;line-height:1.55;}
+.l-msg.err{color:var(--bad);}
+.l-msg a{color:var(--info);}
+.shake{animation:shake .4s;}
+@keyframes shake{20%,60%{transform:translateX(-7px);}40%,80%{transform:translateX(7px);}}
+.l-foot{margin-top:26px;font-size:10px;color:var(--ghost);letter-spacing:.16em;text-transform:uppercase;font-family:Barlow,sans-serif;}
+
+/* ═══════════════════════ APP SHELL ═══════════════════════ */
+#app{display:none;position:relative;z-index:1;max-width:1460px;margin:0 auto;padding:0 26px 60px;}
+.rise{opacity:0;transform:translateY(14px);animation:rise .6s cubic-bezier(.2,.8,.25,1) forwards;}
+@keyframes rise{to{opacity:1;transform:none;}}
+
+/* command bar */
+.cmdbar{display:flex;align-items:center;gap:18px;padding:20px 0 16px;border-bottom:1px solid var(--line);position:relative;}
+.cmdbar::after{content:'';position:absolute;bottom:-1px;left:0;width:220px;height:1px;background:var(--grad);}
+.cmd-logo{height:26px;}
+.cmd-word{font-family:Montserrat,sans-serif;font-weight:800;font-size:16px;display:none;}
+.cmd-word b{color:var(--pink);}
+.cmd-title{display:flex;flex-direction:column;gap:1px;}
+.cmd-title .eyebrow{color:var(--steel);}
+.cmd-title h1{font-size:16px;font-weight:700;letter-spacing:.02em;}
+.cmd-right{margin-left:auto;display:flex;align-items:center;gap:16px;}
+.clock{font-family:Barlow,sans-serif;font-weight:600;font-size:12px;letter-spacing:.1em;color:var(--steel);text-transform:uppercase;}
+.sys-pill{display:flex;align-items:center;gap:7px;padding:6px 14px;border-radius:999px;font-family:Barlow,sans-serif;font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid rgba(53,224,140,.3);color:var(--ok);background:rgba(53,224,140,.06);}
+.sys-pill.degraded{border-color:rgba(255,194,75,.35);color:var(--warn);background:rgba(255,194,75,.06);}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+.signout{background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--steel);padding:8px 16px;border-radius:9px;cursor:pointer;font:inherit;font-size:12px;transition:all .15s;}
+.signout:hover{border-color:var(--pink);color:var(--bone);}
+
+/* ═══════════════ PULSE STRIP (gauge cluster) ═══════════════ */
+.pulse{display:grid;grid-template-columns:repeat(6,1fr);margin:26px 0 30px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.gauge{padding:20px 22px 18px;border-right:1px solid var(--line);position:relative;}
+.gauge:last-child{border-right:none;}
+.gauge::before{content:'';position:absolute;top:-1px;left:0;width:34px;height:2px;background:var(--grad);opacity:0;transition:opacity .3s,width .3s;}
+.gauge:hover::before{opacity:1;width:60%;}
+.gauge .eyebrow{margin-bottom:10px;}
+.gauge .num{font-family:Montserrat,sans-serif;font-weight:800;font-size:34px;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums;}
+.gauge .sub{font-size:11px;color:var(--steel);margin-top:8px;min-height:16px;}
+.gauge .sub .up{color:var(--ok);}
+.gauge.hero .num{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.skeleton{display:inline-block;width:56px;height:30px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
+@keyframes shimmer{to{background-position:-200% 0;}}
+@media (max-width:1100px){.pulse{grid-template-columns:repeat(3,1fr);}.gauge:nth-child(3){border-right:none;}.gauge:nth-child(-n+3){border-bottom:1px solid var(--line);}}
+@media (max-width:640px){.pulse{grid-template-columns:repeat(2,1fr);}.gauge{border-right:1px solid var(--line)!important;}.gauge:nth-child(2n){border-right:none!important;}}
+
+/* ═══════════════ PANEL SYSTEM ═══════════════ */
+.board{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 24px;position:relative;backdrop-filter:blur(22px);min-width:0;}
+.panel::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);}
+/* corner ticks */
+.panel::after{content:'';position:absolute;top:10px;right:10px;width:14px;height:14px;border-top:1.5px solid rgba(237,31,81,.5);border-right:1.5px solid rgba(237,31,81,.5);border-radius:0 4px 0 0;opacity:.7;}
+.p-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;}
+.p-head h2{font-size:14px;font-weight:700;letter-spacing:.03em;display:flex;align-items:center;gap:9px;}
+.p-head h2 .chev{color:var(--pink);font-size:12px;}
+.p-tag{margin-left:auto;font-family:Barlow,sans-serif;font-weight:600;font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:4px 10px;border-radius:6px;}
+.tag-live{color:var(--ok);border:1px solid rgba(53,224,140,.3);background:rgba(53,224,140,.05);}
+.tag-warn{color:var(--warn);border:1px solid rgba(255,194,75,.3);background:rgba(255,194,75,.05);}
+.span7{grid-column:span 7;} .span6{grid-column:span 6;} .span5{grid-column:span 5;} .span4{grid-column:span 4;} .span8{grid-column:span 8;} .span12{grid-column:span 12;}
+@media (max-width:1100px){.span7,.span5,.span6,.span8{grid-column:span 12;}.span4{grid-column:span 6;}}
+@media (max-width:700px){.span4{grid-column:span 12;}}
+.p-note{font-size:12px;color:var(--steel);line-height:1.6;padding:14px;border:1px dashed rgba(255,194,75,.3);border-radius:12px;background:rgba(255,194,75,.04);}
+.p-note b{color:var(--warn);font-weight:600;}
+.p-empty{font-size:12px;color:var(--ghost);padding:18px 0;text-align:center;}
+.launch{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;border:1px solid rgba(255,255,255,.13);
+  background:rgba(255,255,255,.04);color:var(--bone);text-decoration:none;font-size:12px;font-weight:500;transition:all .18s;cursor:pointer;font-family:Inter,sans-serif;}
+.launch:hover{border-color:rgba(237,31,81,.5);background:rgba(237,31,81,.08);transform:translateY(-1px);}
+.launch i{font-size:14px;color:var(--pink);}
+.launch.solid{background:var(--grad);border:none;color:#fff;font-weight:600;box-shadow:0 8px 24px rgba(237,31,81,.3);}
+.launch.solid i{color:#fff;}
+
+/* bars */
+.bar-row{display:flex;align-items:center;gap:12px;padding:7px 0;}
+.bar-name{width:88px;font-size:12px;color:var(--steel);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;background:var(--grad);width:0;transition:width 1s cubic-bezier(.2,.8,.25,1);box-shadow:0 0 10px rgba(237,31,81,.35);}
+.bar-val{width:34px;text-align:right;font-family:Montserrat,sans-serif;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;}
+
+/* trend mini-bars */
+.trend{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:6px;}
+.trend .tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.trend .tbar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#f05825,#ed1f51);min-height:3px;opacity:.9;transition:height 1s cubic-bezier(.2,.8,.25,1);}
+.trend .tlab{font-family:Barlow,sans-serif;font-size:9px;letter-spacing:.08em;color:var(--ghost);text-transform:uppercase;}
+
+/* lead list */
+.lead{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;}
+.lead:last-child{border-bottom:none;}
+.lead .chevb{color:var(--pink);font-size:10px;flex-shrink:0;}
+.lead .ln{font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lead .lm{color:var(--ghost);font-size:11px;flex-shrink:0;}
+
+/* donut legend */
+.donut-wrap{display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
+.legend{display:flex;flex-direction:column;gap:9px;min-width:150px;}
+.leg{display:flex;align-items:center;gap:9px;font-size:12.5px;}
+.leg .sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.leg .lv{margin-left:auto;font-family:Montserrat,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;}
+.prog-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
+.pchip{font-family:Barlow,sans-serif;font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:8px;border:1px solid var(--line);color:var(--steel);}
+.pchip b{color:var(--bone);font-family:Montserrat,sans-serif;margin-left:5px;}
+
+/* batch cards */
+.batch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px;}
+.bcard{border:1px solid var(--line);border-radius:14px;padding:15px 16px;background:rgba(255,255,255,.022);transition:transform .2s,border-color .2s;}
+.bcard:hover{transform:translateY(-3px);border-color:rgba(237,31,81,.35);}
+.bcard .bh{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.bcard .bname{font-family:Montserrat,sans-serif;font-weight:700;font-size:13px;line-height:1.25;flex:1;}
+.bcard .bprog{font-family:Barlow,sans-serif;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:5px;flex-shrink:0;}
+.bp-F{color:var(--info);border:1px solid rgba(77,184,255,.3);}
+.bp-U{color:var(--ember);border:1px solid rgba(240,88,37,.35);}
+.bp-E{color:#c792ff;border:1px solid rgba(199,146,255,.35);}
+.bcard .bmid{display:flex;align-items:center;gap:14px;}
+.ringbox{position:relative;width:58px;height:58px;flex-shrink:0;}
+.ringbox svg{transform:rotate(-90deg);display:block;}
+.ringbox .rc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;}
+.bstats{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--steel);font-family:Barlow,sans-serif;letter-spacing:.05em;}
+.bstats b{color:var(--bone);font-family:Montserrat,sans-serif;font-weight:700;}
+.bcard .bfoot{display:flex;justify-content:space-between;margin-top:12px;font-size:10.5px;color:var(--ghost);}
+.bcard .bfoot .soon{color:var(--warn);font-weight:600;}
+.bcard.done{opacity:.5;}
+.bcard.done:hover{opacity:.85;}
+
+/* briefing (JARVIS) */
+.orb{width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 32% 30%,#ff7a94,#ed1f51 45%,#7a0f2b 90%);
+  box-shadow:0 0 26px rgba(237,31,81,.55),0 0 70px rgba(237,31,81,.2);animation:breathe 3.2s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 26px rgba(237,31,81,.55),0 0 70px rgba(237,31,81,.2);}50%{transform:scale(1.06);box-shadow:0 0 40px rgba(237,31,81,.8),0 0 100px rgba(237,31,81,.3);}}
+.brief-list{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.brief{display:flex;gap:11px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.045);font-size:12.5px;line-height:1.55;}
+.brief:last-child{border-bottom:none;}
+.brief i{font-size:15px;flex-shrink:0;margin-top:1px;}
+.brief b{font-weight:600;}
+.brief .why{color:var(--steel);}
+
+/* today schedule */
+.today-row{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;}
+.today-row:last-child{border-bottom:none;}
+.today-row .tn{font-weight:600;width:78px;flex-shrink:0;color:var(--bone);}
+.today-row .tc{color:var(--steel);line-height:1.5;}
+
+/* media splits */
+.media-split{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.ms{border:1px solid var(--line);border-radius:12px;padding:13px 8px;text-align:center;}
+.ms .n{font-family:Montserrat,sans-serif;font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;}
+.ms .l{font-family:Barlow,sans-serif;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ghost);margin-top:4px;}
+
+/* telemetry rail */
+.telemetry{margin-top:26px;border:1px solid var(--line);border-radius:16px;padding:16px 22px;display:flex;align-items:center;gap:26px;flex-wrap:wrap;background:rgba(255,255,255,.018);}
+.telemetry .eyebrow{margin-right:4px;}
+.tl{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--steel);}
+.tl .light{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.light.pend{background:var(--warn);animation:pulse 1.2s infinite;}
+.light.ok{background:var(--ok);box-shadow:0 0 8px rgba(53,224,140,.6);}
+.light.fail{background:var(--bad);box-shadow:0 0 8px rgba(255,77,94,.6);}
+.tl .fix{color:var(--warn);}
+.ver{margin-left:auto;font-family:Barlow,sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ghost);}
+
+section.zone{margin-top:16px;}
+.zone-head{display:flex;align-items:center;gap:14px;margin:30px 0 14px;}
+.zone-head .zl{font-family:Barlow,sans-serif;font-weight:700;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--steel);display:flex;align-items:center;gap:10px;}
+.zone-head .zl .chev{color:var(--pink);}
+.zone-head::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent);}
+</style>
 </head>
 <body>
-<canvas id="particle-canvas"></canvas>
-<div class="amb"></div>
-<div class="scanline-wrap"></div>
 
+<div class="grid-layer"></div>
+<img class="chevron-ghost" src="brand/logo-mark.png" alt="" onerror="this.remove()"/>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
 <div id="login">
-  <div class="login-grid"></div>
-  <div class="login-glow"></div>
-  <div class="lbox">
-    <div class="l-top">
-      <svg class="l-kimg" viewBox="0 0 24 32" width="34" height="44"><text x="0" y="26" font-family="Rajdhani" font-weight="700" font-size="28" fill="#FF005D">K</text></svg>
-      <div><div class="l-brand">BROKEN ENGLISH</div><div class="l-bsub">Command Center</div></div>
-    </div>
-    <div class="l-title">Welcome back</div>
-    <div class="l-sub">Founders only — Authorised access required</div>
-    <div class="l-field"><div class="l-label">Username</div><input class="l-input" id="lu" type="text" placeholder="your username" autocomplete="username"/></div>
-    <div class="l-field"><div class="l-label">Password</div><input class="l-input" id="lp" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
-    <button class="l-btn" onclick="doLogin()">Access Command Center →</button>
-    <div class="l-err" id="lerr">Invalid credentials. Access denied.</div>
+  <div class="lbox" id="lbox">
+    <img class="l-logo" src="brand/logo-full.png" alt="Broken English" onerror="this.style.display='none';document.querySelector('.l-word').style.display='block'"/>
+    <div class="l-word">BRO<b>K</b>EN ENGLISH</div>
+    <div class="eyebrow">Founder OS · Restricted Access</div>
+    <input class="l-inp" id="lu" placeholder="Username" autocomplete="username"/>
+    <input class="l-inp" id="lp" type="password" placeholder="Password" autocomplete="current-password"/>
+    <button class="l-btn" id="lbtn" onclick="doLogin()">Enter Command</button>
+    <div class="l-msg" id="lmsg"></div>
   </div>
-  <div class="l-footer">Broken English LLP · Intelligence · Control · Growth</div>
+  <div class="l-foot">Broken English LLP · Intelligence · Control · Growth</div>
 </div>
 
+<!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
-  <div class="sb">
-    <div class="sb-top"><svg class="sb-kimg" viewBox="0 0 24 32" width="24" height="30"><text x="0" y="26" font-family="Rajdhani" font-weight="700" font-size="28" fill="#FF005D">K</text></svg><span class="sb-brand">BE COMMAND</span></div>
-    <div class="sb-section">Command Centers</div>
-    <button class="nav-item active" onclick="showPage('home')"><i class="ti ti-layout-dashboard"></i><span class="nav-label">Main Dashboard</span></button>
-    <button class="nav-item" onclick="showPage('founder')"><i class="ti ti-crown"></i><span class="nav-label">Founder Deck</span></button>
-    <button class="nav-item" onclick="showPage('mission')"><i class="ti ti-target"></i><span class="nav-label">Mission Progress</span></button>
-    <button class="nav-item"><i class="ti ti-world"></i><span class="nav-label">Expansion Map</span></button>
-    <div class="sb-section">Operations</div>
-    <button class="nav-item" onclick="showPage('academics')"><i class="ti ti-school"></i><span class="nav-label">Academics</span></button>
-    <button class="nav-item" onclick="showPage('sales')"><i class="ti ti-trending-up"></i><span class="nav-label">Sales</span></button>
-    <button class="nav-item" onclick="showPage('media')"><i class="ti ti-video"></i><span class="nav-label">Media</span></button>
-    <button class="nav-item" onclick="showPage('projects')"><i class="ti ti-briefcase"></i><span class="nav-label">Projects</span></button>
-    <button class="nav-item" onclick="showPage('team')"><i class="ti ti-users"></i><span class="nav-label">People</span></button>
-    <div class="sb-section">Intelligence</div>
-    <button class="nav-item" onclick="openJarvis()"><i class="ti ti-cpu"></i><span class="nav-label">AI Insights</span></button>
-    <div class="sb-spacer"></div>
-    <div class="sb-divider"></div>
-    <div class="sb-user"><img class="sb-avatar" id="sb-avatar" src="" alt=""/><div class="sb-user-info"><div class="sb-username" id="sb-username">—</div><div class="sb-userrole" id="sb-userrole">—</div></div></div>
-    <div class="sb-divider"></div>
-    <div class="sb-jarvis" onclick="openJarvis()"><div class="sb-jorb"></div><div class="sb-jarvis-info"><div class="sb-jarvis-name">JARVIS AI</div><div class="sb-jarvis-status">● Always at your service</div></div></div>
-    <button class="nav-item" onclick="doLogout()"><i class="ti ti-logout"></i><span class="nav-label">Sign out</span></button>
+
+  <header class="cmdbar rise">
+    <img class="cmd-logo" src="brand/logo-mark.png" alt="" onerror="this.style.display='none';document.querySelector('.cmd-word').style.display='block'"/>
+    <div class="cmd-word">BRO<b>K</b>EN</div>
+    <div class="cmd-title">
+      <div class="eyebrow">Broken English · Founder OS</div>
+      <h1 id="greet">Command Center</h1>
+    </div>
+    <div class="cmd-right">
+      <div class="sys-pill" id="sysPill"><span class="dot"></span><span id="sysTxt">Linking sources…</span></div>
+      <div class="clock mono-num" id="clock">—</div>
+      <button class="signout" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <!-- PULSE STRIP -->
+  <div class="pulse rise" style="animation-delay:.05s">
+    <div class="gauge hero"><div class="eyebrow">Students Active</div><div class="num" id="mActive"><span class="skeleton"></span></div><div class="sub" id="mActiveSub"></div></div>
+    <div class="gauge"><div class="eyebrow">Total Enrolled</div><div class="num" id="mTotal"><span class="skeleton"></span></div><div class="sub" id="mTotalSub"></div></div>
+    <div class="gauge"><div class="eyebrow">Completed</div><div class="num" id="mDone"><span class="skeleton"></span></div><div class="sub" id="mDoneSub"></div></div>
+    <div class="gauge"><div class="eyebrow">New This Month</div><div class="num" id="mNew"><span class="skeleton"></span></div><div class="sub" id="mNewSub"></div></div>
+    <div class="gauge"><div class="eyebrow">Total Leads</div><div class="num" id="mLeads"><span class="skeleton"></span></div><div class="sub" id="mLeadsSub"></div></div>
+    <div class="gauge"><div class="eyebrow">Media Tasks Open</div><div class="num" id="mMedia"><span class="skeleton"></span></div><div class="sub" id="mMediaSub"></div></div>
   </div>
 
-  <div class="main">
-    <div class="topbar">
-      <span class="tb-greeting">Good <span id="tb-timepart">evening</span>, <span class="tb-name" id="tb-name">Sreekanth</span></span>
-      <div class="tb-pill" style="margin-left:12px"><div class="tb-dot"></div>All Systems Operational</div>
-      <div class="tb-stats">
-        <div class="tb-stat"><div class="tb-stat-label">Total Students</div><div class="tb-stat-value" style="background:var(--gk);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">1,248</div><div class="tb-stat-change up">+34 today</div></div>
-        <div class="tb-stat"><div class="tb-stat-label">Revenue (M)</div><div class="tb-stat-value" style="color:var(--green)">₹47.8L</div><div class="tb-stat-change up">+11.2%</div></div>
-        <div class="tb-stat"><div class="tb-stat-label">Admissions</div><div class="tb-stat-value" style="color:var(--blue)">26</div><div class="tb-stat-change up">+8 today</div></div>
-        <div class="tb-stat"><div class="tb-stat-label">Trainers Online</div><div class="tb-stat-value" style="color:var(--yellow)">31</div><div class="tb-stat-change dn">2 absent</div></div>
-        <div class="tb-stat"><div class="tb-stat-label">Completion</div><div class="tb-stat-value" style="color:var(--purple)">87%</div><div class="tb-stat-change up">+6% vs LM</div></div>
-      </div>
-      <div class="tb-right">
-        <div class="tb-clock" id="tb-clock">10:43 PM</div>
-        <div class="tb-icon-btn" onclick="openJarvis()" style="border-color:rgba(185,92,255,.32)"><i class="ti ti-cpu" style="color:var(--purple)"></i></div>
+  <!-- ZONE: REVENUE ENGINE -->
+  <div class="zone-head rise" style="animation-delay:.1s"><div class="zl"><i class="ti ti-chevron-left chev"></i>Sales · Admissions</div></div>
+  <div class="board">
+    <div class="panel span7 rise" style="animation-delay:.12s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Admissions &amp; Lead Flow</h2><span class="p-tag tag-live" id="assessTag">Live</span></div>
+      <div id="salesBody"><div class="p-empty">Loading lead intelligence…</div></div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:18px">
+        <a class="launch solid" href="https://broken-english-assessment.onrender.com" target="_blank"><i class="ti ti-clipboard-check"></i>Assessment Tool</a>
+        <a class="launch" href="https://broken-english-assessment.onrender.com/booking.html" target="_blank"><i class="ti ti-calendar-plus"></i>Booking</a>
+        <a class="launch" href="https://docs.google.com/spreadsheets/d/1YLd_SWtFUCzxAF-BxDx8tDHK8NFMHYzCyhVOQkQwSYI" target="_blank"><i class="ti ti-table"></i>Assessment Sheet</a>
       </div>
     </div>
 
-    <div class="content">
-      <div class="page active" id="page-home">
-        <div class="metric-strip">
-          <div class="metric-card"><div class="metric-top-line" style="background:linear-gradient(90deg,var(--k1),var(--k2))"></div><div class="metric-label">Total Students</div><div class="metric-value" style="background:var(--gk);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">1,248</div><div class="metric-change up">+34 today</div><div class="sparkline" id="spk0"></div></div>
-          <div class="metric-card"><div class="metric-top-line" style="background:var(--green)"></div><div class="metric-label">Revenue (M)</div><div class="metric-value" style="color:var(--green)">₹47.8L</div><div class="metric-change up">+11.2% vs LM</div><div class="sparkline" id="spk1"></div></div>
-          <div class="metric-card"><div class="metric-top-line" style="background:var(--blue)"></div><div class="metric-label">Admissions</div><div class="metric-value" style="color:var(--blue)">26</div><div class="metric-change up">+8 today</div><div class="sparkline" id="spk2"></div></div>
-          <div class="metric-card"><div class="metric-top-line" style="background:var(--yellow)"></div><div class="metric-label">Trainers Online</div><div class="metric-value" style="color:var(--yellow)">31</div><div class="metric-change dn">2 absent</div><div class="sparkline" id="spk3"></div></div>
-          <div class="metric-card"><div class="metric-top-line" style="background:var(--purple)"></div><div class="metric-label">Completion Rate</div><div class="metric-value" style="color:var(--purple)">87%</div><div class="metric-change up">+6% vs LM</div><div class="sparkline" id="spk4"></div></div>
-          <div class="metric-card" style="border-color:rgba(255,0,93,.18)"><div class="metric-top-line" style="background:var(--k1)"></div><div class="metric-label" style="color:rgba(255,80,80,.85)">Live Alerts</div><div class="metric-value" style="color:var(--k1);font-size:28px">4</div></div>
-        </div>
+    <div class="panel span5 rise" style="animation-delay:.16s">
+      <div class="p-head" style="align-items:center"><div class="orb"></div><h2 style="margin-left:2px">Daily Briefing</h2><span class="p-tag tag-live">Auto-generated</span></div>
+      <div class="brief-list" id="briefing"><div class="p-empty">Reading all departments…</div></div>
+    </div>
+  </div>
 
-        <div class="war-room">
-          <div class="war-header">
-            <div class="war-title"><svg width="14" height="18" viewBox="0 0 24 32"><text x="0" y="26" font-family="Rajdhani" font-weight="700" font-size="28" fill="#FF005D">K</text></svg>BROKEN ENGLISH WAR ROOM &nbsp;·&nbsp; LIVE INTELLIGENCE CENTER</div>
-            <div class="live-badge"><div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1s infinite"></div>Live</div>
-          </div>
-          <div class="war-body">
-            <div class="war-left">
-              <div class="mission-box">
-                <div class="mission-label">Mission Progress · M1000</div>
-                <div class="mission-count">1,000 Students</div>
-                <div class="mission-ring-wrap">
-                  <svg viewBox="0 0 82 82" width="82" height="82">
-                    <circle cx="41" cy="41" r="35" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6"/>
-                    <circle cx="41" cy="41" r="35" fill="none" stroke="url(#rg-mission)" stroke-width="6" stroke-dasharray="219.9" stroke-dashoffset="57.2" stroke-linecap="round"/>
-                    <defs><linearGradient id="rg-mission" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF005D"/><stop offset="100%" stop-color="#FF6A00"/></linearGradient></defs>
-                  </svg>
-                  <div class="mission-ring-inner"><div class="mission-ring-pct">74%</div><div class="mission-ring-sub">On Track</div></div>
-                </div>
-                <div class="mission-progress-bar"><div class="mission-progress-fill"></div></div>
-              </div>
-              <div class="war-stat-box"><div class="war-stat-label">World</div><div class="war-stat-value" style="color:var(--blue)">1.2K+</div></div>
-              <div class="war-stat-box"><div class="war-stat-label">Kerala</div><div class="war-stat-value" style="color:var(--green)">486</div></div>
-              <div class="war-stat-box"><div class="war-stat-label">Kochi HQ</div><div class="war-stat-value" style="color:var(--k1)">142</div></div>
-            </div>
-
-            <div class="globe-area">
-              <div id="globe-canvas" style="width:295px;height:295px"></div>
-              <div style="position:absolute;inset:0;pointer-events:none">
-                <div class="globe-label" style="top:7px;left:50%;transform:translateX(-50%)"><div class="globe-label-name" style="color:var(--blue);border-color:rgba(0,184,255,.32);background:rgba(0,184,255,.1)">WORLD</div></div>
-                <div class="globe-label" style="right:5px;top:34%"><div class="globe-label-name" style="color:var(--yellow);border-color:rgba(255,196,0,.32);background:rgba(255,196,0,.09)">INDIA</div></div>
-                <div class="globe-label" style="bottom:28px;right:18px"><div class="globe-label-name" style="color:var(--green);border-color:rgba(0,255,136,.32);background:rgba(0,255,136,.09)">KERALA</div></div>
-                <div class="globe-label" style="bottom:15px;left:20px"><div class="globe-label-name" style="color:var(--k1);border-color:rgba(255,0,93,.38);background:rgba(255,0,93,.1)">KOCHI HQ</div></div>
-              </div>
-            </div>
-
-            <div class="war-right">
-              <div>
-                <div class="war-ring-wrap" style="width:124px;height:124px;margin:0 auto 5px">
-                  <svg viewBox="0 0 124 124" width="124" height="124">
-                    <circle cx="62" cy="62" r="54" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
-                    <circle cx="62" cy="62" r="54" fill="none" stroke="#FFC400" stroke-width="8" stroke-dasharray="339.3" stroke-dashoffset="88.2" stroke-linecap="round"/>
-                  </svg>
-                  <div class="war-ring-inner"><div class="war-ring-pct" style="color:var(--yellow)">74%</div><div style="font-size:9px;color:var(--tx2)">₹47.8L Earned</div></div>
-                </div>
-                <div style="text-align:center;font-size:14px;font-weight:700">₹65,00,000</div>
-              </div>
-              <div style="width:100%"><div style="display:flex;align-items:flex-end;gap:3px;height:44px" id="rev-sparkline"></div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="cmd-grid">
-          <div class="cmd-panel cmd-aca" onclick="showPage('academics')">
-            <div class="cp-icon" style="background:rgba(0,184,255,.13)"><i class="ti ti-school" style="color:var(--blue)"></i></div>
-            <div class="cp-title" style="color:var(--blue)">ACADEMICS</div><div class="cp-subtitle">Command Center</div>
-            <div class="cp-stats"><div class="cp-stat"><div class="cp-stat-label">Live Classes</div><div class="cp-stat-value" style="color:var(--blue)">18</div></div><div class="cp-stat"><div class="cp-stat-label">Batches</div><div class="cp-stat-value">126</div></div><div class="cp-stat"><div class="cp-stat-label">Attend.</div><div class="cp-stat-value" style="color:var(--green)">92%</div></div></div>
-            <button class="cp-cta" style="color:var(--blue)"><i class="ti ti-arrow-right"></i>Enter Command Center</button>
-          </div>
-          <div class="cmd-panel cmd-sal" onclick="showPage('sales')">
-            <div class="cp-icon" style="background:rgba(0,255,136,.1)"><i class="ti ti-trending-up" style="color:var(--green)"></i></div>
-            <div class="cp-title" style="color:var(--green)">SALES</div><div class="cp-subtitle">Command Center</div>
-            <div class="cp-stats"><div class="cp-stat"><div class="cp-stat-label">Leads</div><div class="cp-stat-value" style="color:var(--green)">86</div></div><div class="cp-stat"><div class="cp-stat-label">Admissions</div><div class="cp-stat-value">21</div></div><div class="cp-stat"><div class="cp-stat-label">Revenue</div><div class="cp-stat-value" style="color:var(--green);font-size:13px">₹3.45L</div></div></div>
-            <button class="cp-cta" style="color:var(--green)"><i class="ti ti-arrow-right"></i>Enter Command Center</button>
-          </div>
-          <div class="cmd-panel cmd-med" onclick="showPage('media')">
-            <div class="cp-icon" style="background:rgba(255,196,0,.1)"><i class="ti ti-video" style="color:var(--yellow)"></i></div>
-            <div class="cp-title" style="color:var(--yellow)">MEDIA</div><div class="cp-subtitle">Command Center</div>
-            <div class="cp-stats"><div class="cp-stat"><div class="cp-stat-label">In Edit</div><div class="cp-stat-value" style="color:var(--yellow)">7</div></div><div class="cp-stat"><div class="cp-stat-label">Reels</div><div class="cp-stat-value">12</div></div><div class="cp-stat"><div class="cp-stat-label">Scripts</div><div class="cp-stat-value" style="color:var(--green)">23</div></div></div>
-            <button class="cp-cta" style="color:var(--yellow)"><i class="ti ti-arrow-right"></i>Enter Command Center</button>
-          </div>
-          <div class="cmd-panel cmd-prj" onclick="showPage('projects')">
-            <div class="cp-icon" style="background:rgba(185,92,255,.12)"><i class="ti ti-briefcase" style="color:var(--purple)"></i></div>
-            <div class="cp-title" style="color:var(--purple)">PROJECTS</div><div class="cp-subtitle">Command Center</div>
-            <div class="cp-stats"><div class="cp-stat"><div class="cp-stat-label">Active</div><div class="cp-stat-value" style="color:var(--purple)">5</div></div><div class="cp-stat"><div class="cp-stat-label">Tasks</div><div class="cp-stat-value">23</div></div><div class="cp-stat"><div class="cp-stat-label">Done</div><div class="cp-stat-value" style="color:var(--green)">57</div></div></div>
-            <button class="cp-cta" style="color:var(--purple)"><i class="ti ti-arrow-right"></i>Enter Command Center</button>
-          </div>
-        </div>
-
-        <div class="bottom-grid">
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-bolt"></i>Quick Access</div></div>
-              <div class="card-body">
-                <a class="quick-link" href="https://broken-english-assessment.onrender.com" target="_blank"><i class="ti ti-clipboard-check"></i>Assessment Tool<div class="link-live"></div></a>
-                <a class="quick-link" href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank"><i class="ti ti-video"></i>Production Suite<div class="link-live"></div></a>
-                <a class="quick-link" href="https://docs.google.com/spreadsheets/d/1YLd_SWtFUCzxAF-BxDx8tDHK8NFMHYzCyhVOQkQwSYI" target="_blank"><i class="ti ti-table"></i>Master Sheet</a>
-                <a class="quick-link" href="https://github.com/amailtosreekanth-cpu" target="_blank"><i class="ti ti-brand-github"></i>GitHub</a>
-              </div>
-            </div>
-            <div class="jarvis-card"><div class="jarvis-orb-small"></div><div class="jarvis-name">JARVIS</div><div class="jarvis-tag">AI Command Assistant · Always Active</div><div class="jarvis-message">"3 alerts today — 2 trainers absent, website review pending, revenue at 74%."</div><button class="jarvis-btn" onclick="openJarvis()"><i class="ti ti-microphone"></i>Activate JARVIS</button></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-activity"></i>Live Activity Feed</div></div>
-              <div class="card-body">
-                <div class="activity-item"><div class="activity-dot" style="background:var(--green)"></div><div style="flex:1"><div class="activity-text"><span class="activity-bold">New admission</span> — Riya Sharma · Batch 24B</div></div><div class="activity-time">2m</div></div>
-                <div class="activity-item"><div class="activity-dot" style="background:var(--blue)"></div><div style="flex:1"><div class="activity-text"><span class="activity-bold">MTI 3.0 recording complete</span> — Anal</div></div><div class="activity-time">18m</div></div>
-                <div class="activity-item"><div class="activity-dot" style="background:var(--yellow)"></div><div style="flex:1"><div class="activity-text"><span class="activity-bold">Website review requested</span> — Amjad</div></div><div class="activity-time">35m</div></div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-briefcase"></i>Projects</div></div><div class="card-body">
-                <div style="display:flex;align-items:center;gap:7px;padding:5px 0"><div style="flex:1"><div style="font-size:11px">Website Redesign</div></div><div style="width:65px"><div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px"><div style="height:100%;width:75%;background:var(--blue)"></div></div></div></div>
-              </div></div>
-              <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-bell"></i>Alerts</div></div><div class="card-body">
-                <div class="alert-item"><div class="alert-dot" style="background:var(--k1)"></div><div class="alert-text">2 Trainers absent today</div></div>
-                <div class="alert-item"><div class="alert-dot" style="background:var(--yellow)"></div><div class="alert-text">Website delayed 3 days</div></div>
-              </div></div>
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-crown"></i>Founders</div></div><div class="card-body">
-              <div class="founder-mini founder-sr"><img class="founder-photo" src="photos/Sreekanth.jpg" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="founder-fallback" style="background:var(--gk);color:#fff">SR</div><div class="founder-info"><div class="founder-name">SREEKANTH</div><div class="founder-role">CEO · Omega</div></div><div class="founder-badge" style="background:rgba(255,0,93,.15);color:var(--k1)">OMEGA</div></div>
-              <div class="founder-mini founder-hn"><img class="founder-photo" src="photos/Hasnu.png" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="founder-fallback" style="background:var(--ggreen);color:#000">HN</div><div class="founder-info"><div class="founder-name">HASNU</div><div class="founder-role">Sales · Alpha</div></div><div class="founder-badge" style="background:rgba(0,255,136,.12);color:var(--green)">ALPHA</div></div>
-              <div class="founder-mini founder-jz"><img class="founder-photo" src="photos/Jazeel.png" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="founder-fallback" style="background:var(--gblue);color:#fff">JZ</div><div class="founder-info"><div class="founder-name">JAZEEL</div><div class="founder-role">Finance</div></div><div class="founder-badge" style="background:rgba(0,184,255,.12);color:var(--blue)">STRATEGIC</div></div>
-            </div></div>
-            <div class="glass-card"><div class="card-header"><div class="card-title"><i class="ti ti-cpu"></i>System Health</div></div><div class="card-body">
-              <div class="sys-row"><span>Academics System</span><span class="sys-status" style="color:var(--green)">Operational</span></div>
-              <div class="sys-row"><span>AI (JARVIS)</span><span class="sys-status" style="color:var(--purple)">Operational</span></div>
-            </div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="page" id="page-academics"><div class="page-placeholder"><h2 style="color:var(--blue)">ACADEMICS COMMAND CENTER</h2><p>Full build — next session</p><button style="color:var(--blue);border-color:rgba(0,184,255,.35)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-sales"><div class="page-placeholder"><h2 style="color:var(--green)">SALES COMMAND CENTER</h2><p>Full build — next session</p><button style="color:var(--green);border-color:rgba(0,255,136,.3)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-media"><div class="page-placeholder"><h2 style="color:var(--yellow)">MEDIA COMMAND CENTER</h2><p>Full build — next session</p><button style="color:var(--yellow);border-color:rgba(255,196,0,.3)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-projects"><div class="page-placeholder"><h2 style="color:var(--purple)">PROJECTS COMMAND CENTER</h2><p>Full build — next session</p><button style="color:var(--purple);border-color:rgba(185,92,255,.3)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-founder"><div class="page-placeholder"><h2 style="color:var(--k1)">FOUNDER COMMAND DECK</h2><p>Full build — next session</p><button style="color:var(--k1);border-color:rgba(255,0,93,.3)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-mission"><div class="page-placeholder"><h2 style="color:var(--purple)">MISSION PROGRESS CENTER</h2><p>Full build — next session</p><button style="color:var(--purple);border-color:rgba(185,92,255,.3)" onclick="showPage('home')">← Back</button></div></div>
-      <div class="page" id="page-team"><div class="page-placeholder"><h2 style="color:var(--green)">PEOPLE & TEAM</h2><p>Full build — next session</p><button style="color:var(--green);border-color:rgba(0,255,136,.3)" onclick="showPage('home')">← Back</button></div></div>
+  <!-- ZONE: ACADEMICS -->
+  <div class="zone-head rise" style="animation-delay:.18s"><div class="zl"><i class="ti ti-chevron-left chev"></i>Academics</div></div>
+  <div class="board">
+    <div class="panel span5 rise" style="animation-delay:.2s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Student Universe</h2><span class="p-tag tag-live" id="masterTag">Live</span></div>
+      <div id="acadBody"><div class="p-empty">Loading master roster…</div></div>
+      <div style="margin-top:18px"><a class="launch solid" href="academics.html"><i class="ti ti-school"></i>Open Academics Portal</a></div>
     </div>
 
-    <div class="ticker-bar">
-      <div class="ticker-label">Live Activity</div>
-      <div class="ticker-scroll"><div class="ticker-content">
-        <div class="ticker-item"><i class="ti ti-circle-filled" style="color:var(--green);font-size:8px"></i>New admission — Riya Sharma · Batch 24B · 2m ago</div>
-        <div class="ticker-item"><i class="ti ti-circle-filled" style="color:var(--blue);font-size:8px"></i>MTI 3.0 recording complete — Anal · 18m ago</div>
-        <div class="ticker-item"><i class="ti ti-circle-filled" style="color:var(--yellow);font-size:8px"></i>Website review requested — Amjad · 35m ago</div>
-        <div class="ticker-item"><i class="ti ti-circle-filled" style="color:var(--green);font-size:8px"></i>New admission — Riya Sharma · Batch 24B · 2m ago</div>
-        <div class="ticker-item"><i class="ti ti-circle-filled" style="color:var(--blue);font-size:8px"></i>MTI 3.0 recording complete — Anal · 18m ago</div>
-      </div></div>
+    <div class="panel span7 rise" style="animation-delay:.24s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Batch Progress · 32G / 8MC / 2·1:1</h2><span class="p-tag tag-live">Course-structure tracked</span></div>
+      <div class="batch-grid" id="batchGrid"><div class="p-empty">Computing batch trajectories…</div></div>
     </div>
+  </div>
+
+  <div class="board" style="margin-top:16px">
+    <div class="panel span4 rise" style="animation-delay:.26s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Trainer Load</h2></div>
+      <div id="trainerBody"><div class="p-empty">Loading…</div></div>
+    </div>
+
+    <div class="panel span4 rise" style="animation-delay:.3s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Today's Classes</h2><span class="p-tag tag-live" id="schedTag">Live</span></div>
+      <div id="todayBody"><div class="p-empty">Reading trainer schedule…</div></div>
+    </div>
+
+    <div class="panel span4 rise" style="animation-delay:.34s">
+      <div class="p-head"><h2><i class="ti ti-chevrons-left chev"></i>Media Command</h2><span class="p-tag tag-live" id="mediaTag">Live</span></div>
+      <div id="mediaBody"><div class="p-empty">Linking Production Suite…</div></div>
+      <div style="margin-top:16px"><a class="launch" href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank"><i class="ti ti-video"></i>Open Production Suite</a></div>
+    </div>
+  </div>
+
+  <!-- TELEMETRY RAIL -->
+  <div class="telemetry rise" style="animation-delay:.38s">
+    <span class="eyebrow">Data Sources</span>
+    <div class="tl"><span class="light pend" id="tl-master"></span>Master Roster<span class="fix" id="tlf-master"></span></div>
+    <div class="tl"><span class="light pend" id="tl-assess"></span>Assessments<span class="fix" id="tlf-assess"></span></div>
+    <div class="tl"><span class="light pend" id="tl-sched"></span>Trainer Schedule<span class="fix" id="tlf-sched"></span></div>
+    <div class="tl"><span class="light pend" id="tl-acad"></span>Academics DB<span class="fix" id="tlf-acad"></span></div>
+    <div class="tl"><span class="light pend" id="tl-media"></span>Media DB<span class="fix" id="tlf-media"></span></div>
+    <span class="ver">BE Founder OS · v3.0 · Fable build</span>
   </div>
 </div>
 
-<div id="jarvis-overlay">
-  <div class="jov-topbar">
-    <div class="jov-tl"><div class="jov-mini-orb"></div><div><div class="jov-title-text">JARVIS AI</div><div class="jov-title-sub">Always at your service, Founder</div></div><div class="jov-online-pill"><div style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1s infinite"></div>ONLINE</div></div>
-    <button class="jov-dismiss" onclick="closeJarvis()"><i class="ti ti-x"></i>Dismiss</button>
-  </div>
-  <div class="jov-main">
-    <div class="jov-left">
-      <div class="jov-panel"><div class="jov-panel-title" style="color:var(--k1)">⚠ Active Alerts</div>
-        <div class="jov-panel-item"><i class="ti ti-alert-circle" style="color:var(--k1)"></i>2 trainers absent</div>
-        <div class="jov-panel-item"><i class="ti ti-clock" style="color:var(--yellow)"></i>Website delayed 3 days</div>
-      </div>
-      <div class="jov-panel" style="margin-top:8px"><div class="jov-panel-title" style="color:var(--green)">Navigate</div>
-        <div class="nav-cmd-list">
-          <div class="nav-cmd-item" onclick="showPage('home');closeJarvis()"><i class="ti ti-layout-dashboard"></i>Main Dashboard</div>
-          <div class="nav-cmd-item" onclick="showPage('sales');closeJarvis()"><i class="ti ti-trending-up"></i>Sales</div>
-        </div>
-      </div>
-    </div>
-    <div class="jov-center">
-      <div class="jov-big-orb"></div>
-      <div class="jov-waveform">
-        <div class="jov-wave-bar" style="animation-delay:0s"></div><div class="jov-wave-bar" style="animation-delay:.1s"></div><div class="jov-wave-bar" style="animation-delay:.2s"></div><div class="jov-wave-bar" style="animation-delay:.3s"></div><div class="jov-wave-bar" style="animation-delay:.4s"></div><div class="jov-wave-bar" style="animation-delay:.5s"></div>
-      </div>
-      <div class="jov-listen-text" id="jov-listen-text">Listening...</div>
-      <div class="jov-sub-text">How can I assist you, <span id="jov-username">Sreekanth</span>?</div>
-      <div class="jov-transcript" id="jov-transcript"></div>
-      <div class="jov-response" id="jov-response">Waiting for your command...</div>
-    </div>
-    <div class="jov-right">
-      <div class="jov-panel"><div class="jov-panel-title" style="color:var(--purple)">Voice Commands</div>
-        <div class="nav-cmd-list"><div class="nav-cmd-item"><i class="ti ti-microphone" style="color:var(--purple)"></i>"Show me sales"</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="jov-hint-pill" onclick="openJarvis()"><i class="ti ti-microphone"></i>Double-click anywhere · JARVIS</div>
+<script>
+/* ════════════════════════ CONFIG ════════════════════════ */
+const ACADEMICS_DB = {
+  url: 'https://baazubvfsrpmbfmrzumw.supabase.co',
+  key: 'sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh'
+};
+const MEDIA_DB = {
+  url: 'https://fevqnpllmarhoqdzpatq.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldnFucGxsbWFyaG9xZHpwYXRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1OTI1MjgsImV4cCI6MjA5NzE2ODUyOH0.23qi1hDcOA19W2psdIiP2ucypkymG7BZzcTrt2Q2ZSA'
+};
+const SHEETS = {
+  master:  '1Q4cHAm4LrhLM_EcDt0v_X2te038OZM267Q3W5ZeD5XI',
+  assess:  '1YLd_SWtFUCzxAF-BxDx8tDHK8NFMHYzCyhVOQkQwSYI',
+  sched:   '1TfL61kl3VeTk7vYhl4IgTgtpi3yhicdCbUPr9QMydBw'
+};
+const COURSE = { group:32, mc:8, oneone:2, days:63, eliteSessions:20, eliteDays:30 };
 
-<script src="assets/particles.js"></script>
-<script src="assets/globe.js"></script>
-<script src="assets/app.js"></script>
+const acadDB  = supabase.createClient(ACADEMICS_DB.url, ACADEMICS_DB.key);
+const mediaDB = supabase.createClient(MEDIA_DB.url, MEDIA_DB.key);
+
+let founder = null;
+const S = { master:null, assess:null, media:null, acad:null }; // shared state for briefing
+let sourceStates = {};
+
+/* ════════════════════════ UTILITIES ════════════════════════ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const fmt = n => Number(n||0).toLocaleString('en-IN');
+
+function countUp(el, to){
+  if (!el) return;
+  const dur = 900, t0 = performance.now();
+  const step = t => {
+    const p = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.textContent = fmt(Math.round(to*e));
+    if (p<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function setLight(key, state, hint){
+  const l = $('tl-'+key), f = $('tlf-'+key);
+  if (!l) return;
+  sourceStates[key] = state;
+  l.className = 'light ' + (state==='ok'?'ok':state==='fail'?'fail':'pend');
+  if (f) f.textContent = hint ? ' — '+hint : '';
+  const vals = Object.values(sourceStates);
+  const fails = vals.filter(v=>v==='fail').length;
+  const pill = $('sysPill'), txt = $('sysTxt');
+  if (vals.length >= 5){
+    if (fails === 0){ pill.className='sys-pill'; txt.textContent='All systems live'; }
+    else { pill.className='sys-pill degraded'; txt.textContent = fails+' source'+(fails>1?'s':'')+' down'; }
+  }
+}
+
+function sheetCSV(id){ return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`; }
+
+function fetchSheet(id){
+  return new Promise((resolve,reject)=>{
+    Papa.parse(sheetCSV(id), {
+      download:true, skipEmptyLines:false,
+      complete: r => (r.data && r.data.length>1) ? resolve(r.data) : reject(new Error('empty')),
+      error: e => reject(e)
+    });
+  });
+}
+
+/* fuzzy header find */
+const findCol = (headers, ...needles) =>
+  headers.findIndex(h => needles.some(n => String(h||'').toLowerCase().includes(n)));
+
+/* Smart date parsing for messy mixed D/M vs M/D entries.
+   Uses the 2-month course length as the disambiguator; repairs typo years. */
+function parseCandidates(str){
+  const m = String(str||'').match(/(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{2,4})/);
+  if (!m) return [];
+  let [,a,b,y] = m; a=+a; b=+b; y=+(y.length===2?'20'+y:y);
+  const now = new Date().getFullYear();
+  if (y > now+1) y = now;                 // repair obvious typo years
+  const out = [];
+  if (a>=1&&a<=12&&b>=1&&b<=31) out.push(new Date(y,a-1,b)); // M/D
+  if (b>=1&&b<=12&&a>=1&&a<=31&&a>12) out.push(new Date(y,b-1,a)); // D/M only when unambiguous
+  else if (b>=1&&b<=12&&a>=1&&a<=31) out.push(new Date(y,b-1,a));
+  return out.filter(d=>!isNaN(d));
+}
+function smartRange(str, isElite){
+  const parts = String(str||'').split(/[-–—]/).map(s=>s.trim());
+  const sCands = parseCandidates(parts[0]);
+  const eCands = parts.length>1 ? parseCandidates(parts[1]) : [];
+  const target = isElite ? COURSE.eliteDays : COURSE.days;
+  let best = null;
+  for (const s of sCands){
+    if (eCands.length){
+      for (const e of eCands){
+        const d = (e-s)/86400000;
+        if (d>0){
+          const score = Math.abs(d-target);
+          if (!best || score < best.score) best = {start:s, end:e, score};
+        }
+      }
+    }
+  }
+  if (!best && sCands.length){
+    // prefer a start date not in the future by more than 60d
+    const s = sCands.sort((x,y)=>Math.abs(Date.now()-x)-Math.abs(Date.now()-y))[0];
+    best = {start:s, end:new Date(s.getTime()+target*86400000), score:999};
+  }
+  // typo-year repair: if the pair deviates wildly from course length, trust start + course duration
+  if (best && best.score > 45) best.end = new Date(best.start.getTime()+target*86400000);
+  return best ? {start:best.start, end:best.end} : {};
+}
+
+const normStatus = s => {
+  s = String(s||'').toLowerCase();
+  if (s.includes('complete')) return 'complete';
+  if (s.includes('drop')) return 'dropped';
+  if (s.includes('freeze')||s.includes('hold')) return 'frozen';
+  if (s.includes('progress')||s.includes('active')||s.includes('ongoing')) return 'active';
+  return s.trim() ? 'other' : 'active';
+};
+const normProg = p => {
+  p = String(p||'').toLowerCase();
+  if (p.includes('elite')) return 'Elite';
+  if (p.includes('upgrade')) return 'Upgrade';
+  if (p.includes('found')) return 'Foundation';
+  return p ? p.charAt(0).toUpperCase()+p.slice(1,10) : '—';
+};
+
+function ringSVG(pct, color, size=58, w=5){
+  const R=(size-w)/2, C=2*Math.PI*R, off=C*(1-Math.min(1,Math.max(0,pct)));
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="${w}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="${color}" stroke-width="${w}"
+      stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}"
+      style="transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.25,1)" data-off="${off}"/>
+  </svg>`;
+}
+function armRings(scope){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    (scope||document).querySelectorAll('circle[data-off]').forEach(c=>c.style.strokeDashoffset=c.dataset.off);
+  }));
+}
+function donutSVG(segs, size=142, w=15){
+  const R=(size-w)/2, C=2*Math.PI*R, total=segs.reduce((a,s)=>a+s.v,0)||1;
+  let off=0, rings='';
+  for (const s of segs){
+    const len = s.v/total*C;
+    if (len>0) rings += `<circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="${s.c}" stroke-width="${w}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}"/>`;
+    off += len;
+  }
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="transform:rotate(-90deg)">
+    <circle cx="${size/2}" cy="${size/2}" r="${R}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="${w}"/>${rings}</svg>`;
+}
+
+/* ════════════════════════ AUTH ════════════════════════ */
+async function doLogin(){
+  const u = $('lu').value.trim().toLowerCase();
+  const p = $('lp').value;
+  const msg = $('lmsg'), btn = $('lbtn');
+  if (!u || !p){ msg.className='l-msg err'; msg.textContent='Enter username and password.'; return; }
+  btn.disabled = true; msg.className='l-msg'; msg.textContent='Verifying…';
+  try{
+    const { data, error } = await acadDB.from('roles').select('*').eq('username',u).eq('password',p).maybeSingle();
+    if (error) throw error;
+    if (!data){ fail('Invalid credentials.'); return; }
+    if (data.role !== 'founder'){
+      msg.className='l-msg err';
+      msg.innerHTML = 'This console is founders-only. Team members use the <a href="academics.html">Academics Portal</a>.';
+      btn.disabled=false; return;
+    }
+    founder = data;
+    $('login').style.display='none';
+    $('app').style.display='block';
+    boot();
+  }catch(e){
+    fail('Cannot reach the auth database. Check your connection and retry.');
+  }
+  function fail(t){ msg.className='l-msg err'; msg.textContent=t; btn.disabled=false; $('lbox').classList.remove('shake'); void $('lbox').offsetWidth; $('lbox').classList.add('shake'); }
+}
+document.addEventListener('keydown', e=>{ if (e.key==='Enter' && $('login').style.display!=='none') doLogin(); });
+function signOut(){ founder=null; location.reload(); }
+
+/* ════════════════════════ BOOT ════════════════════════ */
+function boot(){
+  const h = new Date().getHours();
+  $('greet').textContent = (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+founder.name;
+  tickClock(); setInterval(tickClock,1000);
+  Promise.allSettled([loadMaster(), loadAssess(), loadSchedule(), loadAcadDB(), loadMedia()])
+    .then(buildBriefing);
+}
+function tickClock(){
+  const n = new Date();
+  $('clock').textContent = n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})
+    + ' · ' + n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+}
+
+/* ════════════════ SOURCE 1 · MASTER ROSTER ════════════════ */
+async function loadMaster(){
+  try{
+    const rows = await fetchSheet(SHEETS.master);
+    const head = rows[0].map(h=>String(h||''));
+    const cName = findCol(head,'student'), cBatch = findCol(head,'batch name','batch'),
+          cDate = findCol(head,'started','date'), cTrainer = findCol(head,'trainer'),
+          cProg = findCol(head,'programme','program'), cStat = findCol(head,'final status','status');
+    const students = rows.slice(1)
+      .filter(r => r[cName] && String(r[cName]).trim())
+      .map(r => {
+        const prog = normProg(r[cProg]);
+        return {
+          name: String(r[cName]).trim(),
+          batch: String(r[cBatch]||'').trim() || 'Unassigned',
+          trainer: String(r[cTrainer]||'').trim() || '—',
+          prog,
+          status: normStatus(r[cStat]),
+          range: smartRange(r[cDate], prog==='Elite')
+        };
+      });
+    if (!students.length) throw new Error('no rows');
+
+    const by = k => students.reduce((m,s)=>{ m[s[k]]=(m[s[k]]||0)+1; return m; },{});
+    const stat = by('status'), prog = by('prog');
+    const active = stat.active||0, done = stat.complete||0, dropped = stat.dropped||0, frozen = stat.frozen||0;
+
+    /* new this month */
+    const now = new Date(), mo = now.getMonth(), yr = now.getFullYear();
+    const newThisMonth = students.filter(s=>s.range.start && s.range.start.getMonth()===mo && s.range.start.getFullYear()===yr).length;
+
+    /* pulse */
+    countUp($('mActive'), active);  $('mActiveSub').innerHTML = frozen ? `<span style="color:var(--warn)">${frozen} on freeze</span>` : 'all running';
+    countUp($('mTotal'), students.length); $('mTotalSub').textContent = 'lifetime roster';
+    countUp($('mDone'), done); $('mDoneSub').innerHTML = `<span class="up">${students.length?Math.round(done/students.length*100):0}% completion</span>`;
+    countUp($('mNew'), newThisMonth); $('mNewSub').textContent = now.toLocaleDateString('en-IN',{month:'long'});
+
+    /* academics panel — donut + programme chips */
+    const segs = [
+      {v:active,  c:'#ed1f51', l:'In Progress'},
+      {v:done,    c:'#35e08c', l:'Completed'},
+      {v:frozen,  c:'#ffc24b', l:'On Freeze'},
+      {v:dropped, c:'rgba(255,255,255,.22)', l:'Dropped'}
+    ].filter(s=>s.v>0);
+    $('acadBody').innerHTML = `
+      <div class="donut-wrap">
+        <div style="position:relative">${donutSVG(segs)}
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-family:Montserrat;font-weight:800;font-size:26px" class="mono-num">${fmt(students.length)}</div>
+            <div class="eyebrow">students</div>
+          </div>
+        </div>
+        <div class="legend">${segs.map(s=>`<div class="leg"><span class="sw" style="background:${s.c}"></span>${s.l}<span class="lv">${fmt(s.v)}</span></div>`).join('')}</div>
+      </div>
+      <div class="prog-chips">
+        ${['Foundation','Upgrade','Elite'].filter(p=>prog[p]).map(p=>`<span class="pchip">${p}<b>${fmt(prog[p])}</b></span>`).join('')}
+      </div>`;
+
+    /* batch cards */
+    const batches = {};
+    for (const s of students){
+      if (s.batch==='Unassigned') continue;
+      (batches[s.batch] ||= {name:s.batch, students:[], progs:{}, trainers:{}, starts:[], ends:[]}).students.push(s);
+      batches[s.batch].progs[s.prog]=(batches[s.batch].progs[s.prog]||0)+1;
+      batches[s.batch].trainers[s.trainer]=(batches[s.batch].trainers[s.trainer]||0)+1;
+      if (s.range.start) batches[s.batch].starts.push(+s.range.start);
+      if (s.range.end) batches[s.batch].ends.push(+s.range.end);
+    }
+    const mode = o => Object.entries(o).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+    const cards = Object.values(batches).map(b=>{
+      b.prog = mode(b.progs); b.trainer = mode(b.trainers);
+      b.start = b.starts.length ? new Date(Math.min(...b.starts)) : null;
+      b.end   = b.ends.length ? new Date(Math.max(...b.ends)) : null;
+      const activeCount = b.students.filter(s=>s.status==='active').length;
+      const allDone = activeCount===0 && b.students.some(s=>s.status==='complete');
+      const isElite = b.prog==='Elite';
+      const durDays = isElite ? COURSE.eliteDays : COURSE.days;
+      let pct=0, weeks=0;
+      if (allDone) pct=1;
+      else if (b.start){
+        const el = Math.max(0, Math.min(durDays, (Date.now()-b.start)/86400000));
+        pct = el/durDays; weeks = el/7;
+      }
+      const g  = allDone?COURSE.group : Math.min(COURSE.group, Math.floor(weeks*4));
+      const mc = allDone?COURSE.mc    : Math.min(COURSE.mc, Math.floor(weeks));
+      const oo = allDone?COURSE.oneone: (pct>0.75?2 : pct>0.05?1 : 0);
+      const eS = allDone?COURSE.eliteSessions : Math.min(COURSE.eliteSessions, Math.floor(weeks*5));
+      const endsIn = b.end ? Math.ceil((b.end-Date.now())/86400000) : null;
+      const soon = endsIn!==null && endsIn>=0 && endsIn<=14 && !allDone;
+      b._soon = soon; b._pct=pct; b._activeCount=activeCount; b._allDone=allDone; b._endsIn=endsIn;
+      const chips = isElite
+        ? `<span>1:1 <b>${eS}/${COURSE.eliteSessions}</b></span>`
+        : `<span>G <b>${g}/${COURSE.group}</b></span><span>MC <b>${mc}/${COURSE.mc}</b></span><span>1:1 <b>${oo}/${COURSE.oneone}</b></span>`;
+      return {b, html:`
+        <div class="bcard ${allDone?'done':''}">
+          <div class="bh"><div class="bname">${esc(b.name)}</div><span class="bprog bp-${b.prog[0]||'F'}">${esc(b.prog)}</span></div>
+          <div class="bmid">
+            <div class="ringbox">${ringSVG(pct, allDone ? '#35e08c' : soon ? '#ffc24b' : '#ed1f51')}<div class="rc mono-num">${Math.round(pct*100)}%</div></div>
+            <div class="bstats">${chips}</div>
+          </div>
+          <div class="bfoot">
+            <span>${esc(b.trainer)} · ${b.students.length} students</span>
+            <span class="${soon?'soon':''}">${allDone?'Complete':(b.end?'ends '+b.end.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'')}</span>
+          </div>
+        </div>`};
+    });
+    cards.sort((a,b)=>{
+      if (a.b._allDone!==b.b._allDone) return a.b._allDone?1:-1;
+      return (a.b.end?+a.b.end:9e15) - (b.b.end?+b.b.end:9e15);
+    });
+    $('batchGrid').innerHTML = cards.map(c=>c.html).join('') || '<div class="p-empty">No batches found in the master sheet.</div>';
+    armRings($('batchGrid'));
+
+    /* trainer load */
+    const tl = {};
+    students.filter(s=>s.status==='active').forEach(s=>{ if (s.trainer!=='—') tl[s.trainer]=(tl[s.trainer]||0)+1; });
+    const tEntries = Object.entries(tl).sort((a,b)=>b[1]-a[1]);
+    const tMax = tEntries[0]?.[1]||1;
+    $('trainerBody').innerHTML = tEntries.length
+      ? tEntries.map(([n,v])=>`<div class="bar-row"><span class="bar-name">${esc(n)}</span><div class="bar-track"><div class="bar-fill" data-w="${Math.round(v/tMax*100)}"></div></div><span class="bar-val mono-num">${v}</span></div>`).join('')
+        + `<div style="font-size:10px;color:var(--ghost);margin-top:10px">Active students in charge · from master roster</div>`
+      : '<div class="p-empty">No active assignments found.</div>';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('#trainerBody .bar-fill').forEach(el=>el.style.width=el.dataset.w+'%')));
+
+    S.master = {students, batches:Object.values(batches).map(c=>c), stat, newThisMonth, frozen};
+    setLight('master','ok');
+  }catch(e){
+    setLight('master','fail','check sheet sharing = anyone with link');
+    $('masterTag').className='p-tag tag-warn'; $('masterTag').textContent='Offline';
+    $('acadBody').innerHTML = '<div class="p-note"><b>Master roster unreachable.</b> Open the sheet → Share → set to "Anyone with the link · Viewer", then refresh.</div>';
+    $('batchGrid').innerHTML = '<div class="p-empty">Waiting on master roster.</div>';
+    $('trainerBody').innerHTML = '<div class="p-empty">Waiting on master roster.</div>';
+    ['mActive','mTotal','mDone','mNew'].forEach(id=>$(id).textContent='—');
+  }
+}
+
+/* ════════════════ SOURCE 2 · ASSESSMENT / LEADS ════════════════ */
+async function loadAssess(){
+  try{
+    const rows = await fetchSheet(SHEETS.assess);
+    const head = rows[0].map(h=>String(h||''));
+    const cName = findCol(head,'name'), cCouns = findCol(head,'couns','councel','counsel'),
+          cDate = findCol(head,'timestamp','date'), cStat = findCol(head,'status','outcome');
+    const leads = rows.slice(1).filter(r => cName>=0 && r[cName] && String(r[cName]).trim());
+    if (!leads.length) throw new Error('no leads');
+
+    countUp($('mLeads'), leads.length); $('mLeadsSub').textContent='assessment pipeline';
+
+    /* counsellor split */
+    let counsHTML = '';
+    if (cCouns>=0){
+      const cs = {};
+      leads.forEach(r=>{ const c=String(r[cCouns]||'').trim(); if (c) cs[c]=(cs[c]||0)+1; });
+      const top = Object.entries(cs).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      const max = top[0]?.[1]||1;
+      if (top.length) counsHTML = `<div class="eyebrow" style="margin:4px 0 8px">Leads by counsellor</div>`
+        + top.map(([n,v])=>`<div class="bar-row"><span class="bar-name">${esc(n)}</span><div class="bar-track"><div class="bar-fill" data-w="${Math.round(v/max*100)}"></div></div><span class="bar-val mono-num">${v}</span></div>`).join('');
+    }
+
+    /* monthly trend from dates */
+    let trendHTML='', weekCount=0;
+    if (cDate>=0){
+      const byMonth = new Map();
+      const now = new Date();
+      for (let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); byMonth.set(d.getFullYear()+'-'+d.getMonth(), {lab:d.toLocaleDateString('en-IN',{month:'short'}),v:0}); }
+      leads.forEach(r=>{
+        const d = new Date(r[cDate]);
+        if (!isNaN(d)){
+          const k = d.getFullYear()+'-'+d.getMonth();
+          if (byMonth.has(k)) byMonth.get(k).v++;
+          if (Date.now()-d < 7*86400000) weekCount++;
+        }
+      });
+      const cols=[...byMonth.values()], mx=Math.max(...cols.map(c=>c.v),1);
+      if (cols.some(c=>c.v>0)) trendHTML = `<div class="eyebrow" style="margin:18px 0 0">Lead flow · 6 months</div>
+        <div class="trend">${cols.map(c=>`<div class="tcol"><div class="tbar" style="height:${Math.max(4,c.v/mx*100)}%"></div><div class="tlab">${c.lab}</div></div>`).join('')}</div>`;
+    }
+
+    /* recent leads */
+    const recent = leads.slice(-6).reverse().map(r=>{
+      const meta=[cCouns>=0?r[cCouns]:'', cStat>=0?r[cStat]:''].filter(x=>x&&String(x).trim()).join(' · ');
+      return `<div class="lead"><i class="ti ti-chevron-left chevb"></i><span class="ln">${esc(r[cName])}</span><span class="lm">${esc(meta)}</span></div>`;
+    }).join('');
+
+    $('salesBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+        <div>${counsHTML || '<div class="p-empty">Counsellor column not found in first tab.</div>'}${trendHTML}</div>
+        <div><div class="eyebrow" style="margin:4px 0 6px">Latest leads</div>${recent}</div>
+      </div>`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('#salesBody .bar-fill').forEach(el=>el.style.width=el.dataset.w+'%')));
+
+    S.assess = {total:leads.length, weekCount};
+    setLight('assess','ok');
+  }catch(e){
+    setLight('assess','fail','check sheet sharing');
+    $('assessTag').className='p-tag tag-warn'; $('assessTag').textContent='Offline';
+    $('salesBody').innerHTML='<div class="p-note"><b>Assessment sheet unreachable.</b> Confirm it is shared as "Anyone with the link · Viewer". Your Apps Script automation is untouched either way.</div>';
+    $('mLeads').textContent='—';
+  }
+}
+
+/* ════════════════ SOURCE 3 · TRAINER SCHEDULE (today) ════════════════ */
+async function loadSchedule(){
+  try{
+    const rows = await fetchSheet(SHEETS.sched);
+    const day = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+    let headIdx=-1, dayIdx=-1;
+    rows.forEach((r,i)=>{
+      if (headIdx<0 && r.some(c=>/trainer/i.test(String(c||'')))) headIdx=i;
+      if (dayIdx<0 && r.some(c=>String(c||'').trim().toLowerCase()===day.toLowerCase())) dayIdx=i;
+    });
+    if (headIdx<0 || dayIdx<0) throw new Error('grid not recognised');
+    const headRow = rows[headIdx], dayRow = rows[dayIdx];
+    const anchor = headRow.findIndex(c=>/trainer/i.test(String(c||'')));
+    const entries = [];
+    for (let c=anchor+1; c<headRow.length; c++){
+      const trainer = String(headRow[c]||'').trim();
+      const cell = String(dayRow[c]||'').trim();
+      if (trainer && cell && !/^(na|n\/a|-|free|break)$/i.test(cell)) entries.push({trainer, cell});
+    }
+    $('todayBody').innerHTML = entries.length
+      ? `<div class="eyebrow" style="margin-bottom:8px">${day}</div>` +
+        entries.map(e=>`<div class="today-row"><span class="tn">${esc(e.trainer)}</span><span class="tc">${esc(e.cell)}</span></div>`).join('')
+      : `<div class="p-empty">No classes scheduled for ${day}.</div>`;
+    setLight('sched','ok');
+  }catch(e){
+    setLight('sched','fail','grid layout changed or sharing off');
+    $('schedTag').className='p-tag tag-warn'; $('schedTag').textContent='Offline';
+    $('todayBody').innerHTML='<div class="p-note"><b>Schedule sheet unreadable.</b> Check sharing, or the grid layout changed — tell me and I retune the parser.</div>';
+  }
+}
+
+/* ════════════════ SOURCE 4 · ACADEMICS DB (Supabase) ════════════════ */
+async function loadAcadDB(){
+  try{
+    const [{data:trainers,error:e1},{data:assigns,error:e2},{data:sessions,error:e3}] = await Promise.all([
+      acadDB.from('trainers').select('id,name,status').eq('status','active'),
+      acadDB.from('assignments').select('id,status,task,trainer_id').neq('status','done'),
+      acadDB.from('sessions').select('id').limit(1000)
+    ]);
+    if (e1||e2||e3) throw (e1||e2||e3);
+    S.acad = {trainers:trainers||[], pendingTasks:(assigns||[]).length, sessionsLogged:(sessions||[]).length};
+    setLight('acad','ok');
+  }catch(e){
+    S.acad = null;
+    setLight('acad','fail','Supabase project unreachable');
+  }
+}
+
+/* ════════════════ SOURCE 5 · MEDIA DB (Production Suite) ════════════════ */
+async function loadMedia(){
+  try{
+    const {data:tasks, error} = await mediaDB.from('assignments').select('id,topic,type,assigned_to,status,date,assigned_date');
+    if (error) throw error;
+    const all = tasks||[];
+    const st = s => String(s||'').toLowerCase();
+    const done = all.filter(t=>st(t.status).includes('done')||st(t.status).includes('complete')||st(t.status).includes('approved'));
+    const open = all.filter(t=>!done.includes(t));
+    const inProg = open.filter(t=>st(t.status).includes('progress')||st(t.status).includes('edit'));
+    const pending = open.length - inProg.length;
+
+    countUp($('mMedia'), open.length);
+    $('mMediaSub').textContent = done.length + ' delivered lifetime';
+
+    /* per person */
+    const per = {};
+    open.forEach(t=>{ const p=String(t.assigned_to||'—').trim(); per[p]=(per[p]||0)+1; });
+    const perHTML = Object.entries(per).sort((a,b)=>b[1]-a[1]).slice(0,4)
+      .map(([n,v])=>`<div class="lead"><i class="ti ti-chevron-left chevb"></i><span class="ln">${esc(n)}</span><span class="lm mono-num">${v} open</span></div>`).join('');
+
+    /* recent open tasks */
+    const recent = open.slice(-3).reverse()
+      .map(t=>`<div class="lead"><i class="ti ti-chevron-left chevb"></i><span class="ln">${esc(t.topic||t.type||'Task')}</span><span class="lm">${esc(t.assigned_to||'')}</span></div>`).join('');
+
+    $('mediaBody').innerHTML = `
+      <div class="media-split">
+        <div class="ms"><div class="n mono-num" style="color:var(--warn)">${pending}</div><div class="l">Queued</div></div>
+        <div class="ms"><div class="n mono-num" style="color:var(--info)">${inProg.length}</div><div class="l">In Edit</div></div>
+        <div class="ms"><div class="n mono-num" style="color:var(--ok)">${done.length}</div><div class="l">Delivered</div></div>
+      </div>
+      ${perHTML ? `<div class="eyebrow" style="margin-bottom:4px">Open by owner</div>${perHTML}` : ''}
+      ${recent ? `<div class="eyebrow" style="margin:12px 0 4px">Latest tasks</div>${recent}` : ''}`;
+
+    S.media = {open:open.length, pending, inProg:inProg.length, done:done.length};
+    setLight('media','ok');
+  }catch(e){
+    setLight('media','fail','Production Suite DB unreachable');
+    $('mediaTag').className='p-tag tag-warn'; $('mediaTag').textContent='Offline';
+    $('mediaBody').innerHTML='<div class="p-note"><b>Media database unreachable.</b> The Production Suite backend didn\'t answer — the suite itself still works from the button below.</div>';
+    $('mMedia').textContent='—'; $('mMediaSub').textContent='';
+  }
+}
+
+/* ════════════════ JARVIS BRIEFING (computed, never faked) ════════════════ */
+function buildBriefing(){
+  const items = [];
+  const M = S.master, A = S.assess, D = S.acad, V = S.media;
+
+  if (M){
+    const soonBatches = (M.batches||[]).filter(b=>{
+      const activeCount = b.students.filter(s=>s.status==='active').length;
+      const end = b.ends?.length ? new Date(Math.max(...b.ends)) : null;
+      if (!end || !activeCount) return false;
+      const d = Math.ceil((end-Date.now())/86400000);
+      return d>=0 && d<=14;
+    });
+    soonBatches.slice(0,2).forEach(b=>{
+      const end = new Date(Math.max(...b.ends));
+      items.push({i:'ti-flag-3', c:'var(--warn)', t:`<b>${esc(b.name)}</b> ends ${end.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} <span class="why">— confirm final one-on-ones are booked.</span>`});
+    });
+    if (M.frozen) items.push({i:'ti-snowflake', c:'var(--info)', t:`<b>${M.frozen} student${M.frozen>1?'s':''} on freeze</b> <span class="why">— worth a re-activation nudge from counsellors.</span>`});
+    if (M.newThisMonth) items.push({i:'ti-trending-up', c:'var(--ok)', t:`<b>${M.newThisMonth} new admission${M.newThisMonth>1?'s':''}</b> <span class="why">joined this month.</span>`});
+  }
+  if (A?.weekCount) items.push({i:'ti-users-plus', c:'var(--ok)', t:`<b>${A.weekCount} fresh lead${A.weekCount>1?'s':''}</b> <span class="why">entered the pipeline in the last 7 days.</span>`});
+  if (D?.pendingTasks) items.push({i:'ti-checklist', c:'var(--warn)', t:`<b>${D.pendingTasks} trainer task${D.pendingTasks>1?'s':''} open</b> <span class="why">in the academics portal.</span>`});
+  if (D && M){
+    const namesWithLoad = new Set(Object.keys(M.students.reduce((m,s)=>{ if(s.status==='active'&&s.trainer!=='—') m[s.trainer]=1; return m; },{})));
+    const idle = (D.trainers||[]).filter(t=>![...namesWithLoad].some(n=>n.toLowerCase().includes(String(t.name).toLowerCase())||String(t.name).toLowerCase().includes(n.toLowerCase())));
+    if (idle.length) items.push({i:'ti-user-question', c:'var(--info)', t:`<b>${idle.length} trainer${idle.length>1?'s':''} without active students</b> <span class="why">— ${esc(idle.slice(0,3).map(t=>t.name).join(', '))}${idle.length>3?'…':''}.</span>`});
+  }
+  if (V?.pending) items.push({i:'ti-video', c:'var(--warn)', t:`<b>${V.pending} media task${V.pending>1?'s':''} queued</b> <span class="why">— not yet picked up in the Production Suite.</span>`});
+
+  const failed = Object.entries(sourceStates).filter(([,v])=>v==='fail');
+  failed.forEach(([k])=>items.push({i:'ti-plug-x', c:'var(--bad)', t:`<b>${({master:'Master roster',assess:'Assessment sheet',sched:'Trainer schedule',acad:'Academics DB',media:'Media DB'})[k]} is offline</b> <span class="why">— see the fix hint in the rail below.</span>`}));
+
+  $('briefing').innerHTML = items.length
+    ? items.slice(0,7).map(x=>`<div class="brief"><i class="ti ${x.i}" style="color:${x.c}"></i><span>${x.t}</span></div>`).join('')
+    : '<div class="brief"><i class="ti ti-circle-check" style="color:var(--ok)"></i><span><b>All quiet.</b> <span class="why">No urgent actions detected across departments.</span></span></div>';
+}
+</script>
 </body>
 </html>
