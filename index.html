@@ -243,6 +243,32 @@ body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body
 .cal td{padding:9px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.03);font-family:Montserrat,sans-serif;font-weight:700}
 .cal td.z{color:var(--ghost);font-weight:400}
 pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:12px;padding:14px 16px;font-size:11px;line-height:1.6;overflow-x:auto;color:#c8e6d4;margin:12px 0;font-family:ui-monospace,monospace}
+
+/* ── kpi texture + dock magnification + clickability ── */
+.kpi{cursor:pointer;transition:transform .22s cubic-bezier(.3,1.4,.45,1),box-shadow .22s;will-change:transform}
+.kpi::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.5;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0"/></filter><rect width="140" height="140" filter="url(%23n)"/></svg>')}
+.kpi:active{transform:scale(.985)!important}
+.clk{cursor:pointer;transition:background .15s}
+.clk:hover{background:rgba(255,255,255,.035)}
+/* ── apple-style detail sheet ── */
+.sheet-bg{position:fixed;inset:0;background:rgba(3,3,7,.55);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;z-index:700;padding:24px}
+.sheet-bg.on{display:flex}
+.sheet{width:min(640px,94vw);max-height:80vh;overflow:auto;background:linear-gradient(165deg,rgba(30,24,32,.94),rgba(9,7,13,.98));border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:26px 28px;position:relative;box-shadow:0 50px 130px rgba(0,0,0,.9);animation:shpop .38s cubic-bezier(.2,.95,.3,1.12);scrollbar-width:thin}
+@keyframes shpop{from{opacity:0;transform:scale(.94) translateY(16px)}to{opacity:1;transform:none}}
+.sh-x{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--bone);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.sh-x:hover{background:rgba(237,31,81,.35)}
+.sheet h2{font-size:18px;font-weight:800;margin:4px 0 2px}
+.sheet .sh-sub{font-size:11.5px;color:var(--steel);margin-bottom:16px}
+.sh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.sh-cell{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.sh-cell .n{font-family:Montserrat;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}
+.sh-cell .l{font-family:Barlow;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ghost);margin-top:3px}
+.chip{display:inline-block;font-family:Barlow;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid var(--line);color:var(--steel)}
+/* ── mission acquired overlay ── */
+#missionTag{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);font-family:Barlow,sans-serif;font-weight:700;font-size:15px;letter-spacing:.5em;text-transform:uppercase;color:#4d9fff;text-shadow:0 0 24px rgba(77,159,255,.9);opacity:0;transition:opacity .8s;pointer-events:none;white-space:nowrap;z-index:3}
+#orbBtn{cursor:pointer}
+#orbBtn:hover{filter:brightness(1.15)}
+#globeEl{transition:transform .09s linear}
 </style>
 </head>
 <body data-th="deck">
@@ -267,8 +293,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
   <!-- SIDEBAR -->
   <nav class="sb">
     <div class="sb-brand">
-      <img src="brand/logo-mark.png" alt="" onerror="this.remove()"/>
-      <div class="w">BRO<b>K</b>EN<br>ENGLISH</div>
+      <img src="brand/logo-full.png" alt="Broken English" style="height:30px" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=w>BRO<b>K</b>EN<br>ENGLISH</div>')"/>
     </div>
     <div class="sb-sec eb">Mission Control</div>
     <a class="sb-it on" data-p="deck" onclick="go('deck')"><i class="ti ti-layout-dashboard"></i>Founder Deck</a>
@@ -315,7 +340,8 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
         </div>
         <div class="globe-zone">
           <div id="globeEl"></div>
-          <div class="jarvis"><div class="orb"></div><div class="jt">JARVIS</div><div class="js">Listening · Analyzing · Advising</div></div>
+          <div id="missionTag">Mission Acquired</div>
+          <div class="jarvis"><div class="orb" id="orbBtn" onclick="toggleJarvis()" title="Tap — JARVIS listens to your mic"></div><div class="jt">JARVIS</div><div class="js" id="jsSub">Tap the orb · JARVIS listens</div></div>
         </div>
         <div class="hcol">
           <div class="hcard">
@@ -448,6 +474,10 @@ insert into projects (name,owner,progress,status,tasks_done,tasks_total) values
   </div>
 </div></div>
 
+<div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet"><button class="sh-x" onclick="closeSheet()">✕</button><div class="eb" id="shSub"></div><h2 id="shTitle"></h2><div class="sh-sub" id="shMeta"></div><div id="shBody"></div></div>
+</div>
+
 <script>
 /* ═══════════ CONFIG ═══════════ */
 const ACAD={url:'https://baazubvfsrpmbfmrzumw.supabase.co',key:'sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh'};
@@ -504,7 +534,7 @@ const normStatus=s=>{s=String(s||'').toLowerCase();
   if(s.includes('freeze')||s.includes('hold'))return'frozen';
   if(s.includes('progress')||s.includes('active')||s.includes('ongoing'))return'active';
   return s.trim()?'other':'active';};
-const normProg=p=>{p=String(p||'').toLowerCase();if(p.includes('elite'))return'Elite';if(p.includes('upgrade'))return'Upgrade';if(p.includes('found'))return'Foundation';return p?p[0].toUpperCase()+p.slice(1,10):'—';};
+const normProg=p=>{p=String(p||'').toLowerCase();if(p.includes('ielts'))return p.includes('one')||p.includes('1:1')?'IELTS 1:1':'IELTS';if(p.includes('elite'))return'Elite';if(p.includes('upgrade'))return'Upgrade';if(p.includes('found'))return'Foundation';return p?p[0].toUpperCase()+p.slice(1,10):'—';};
 
 function spark(vals,color,w=104,h=32){
   if(!vals||vals.length<2)return'';
@@ -514,7 +544,7 @@ function spark(vals,color,w=104,h=32){
   const gid='g'+Math.random().toString(36).slice(2,8);
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".3"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${d} ${w},${h}" fill="url(#${gid})"/><polyline points="${d}" fill="none" stroke="${color}" stroke-width="1.6" style="filter:drop-shadow(0 0 3px ${color})"/></svg>`;
 }
-function areaChart(labels,vals,color,w=460,h=150){
+function areaChart(labels,vals,color,w=460,h=150,clickFn){
   if(!vals||vals.length<2)return'<div class="empty">Not enough data yet.</div>';
   const mx=Math.max(...vals,1);const pw=w-10;
   const pts=vals.map((v,i)=>[(6+i/(vals.length-1)*(pw-12)).toFixed(1),(h-24-(v/mx)*(h-40)).toFixed(1)]);
@@ -523,7 +553,7 @@ function areaChart(labels,vals,color,w=460,h=150){
   return `<svg width="100%" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
   <polygon points="6,${h-24} ${d} ${pw-6},${h-24}" fill="url(#${gid})"/>
   <polyline points="${d}" fill="none" stroke="${color}" stroke-width="2" style="filter:drop-shadow(0 0 4px ${color})"/>
-  ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="${color}"/><text x="${p[0]}" y="${+p[1]-8}" text-anchor="middle" font-size="9" fill="${color}" font-weight="700">${vals[i]||''}</text>`).join('')}
+  ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${clickFn?6:2.6}" fill="${clickFn?'transparent':color}" ${clickFn?`onclick="${clickFn}(${i})" style="cursor:pointer" stroke="transparent" stroke-width="10"`:''}/><circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="${color}" style="pointer-events:none"/><text x="${p[0]}" y="${+p[1]-8}" text-anchor="middle" font-size="9" fill="${color}" font-weight="700" style="pointer-events:none">${vals[i]||''}</text>`).join('')}
   ${labels.map((l,i)=>`<text x="${pts[i][0]}" y="${h-8}" text-anchor="middle" font-size="8.5" fill="rgba(255,255,255,.3)" letter-spacing="1">${l.toUpperCase()}</text>`).join('')}</svg>`;
 }
 function donut(segs,size=132,w=14){
@@ -548,12 +578,12 @@ async function doLogin(){
     if(error)throw error;
     if(!data){fail('Invalid credentials.');return;}
     if(data.role!=='founder'){msg.className='l-msg err';msg.innerHTML='Founders only. Team members use the <a href="academics.html">Academics Portal</a>.';btn.disabled=false;return;}
-    founder=data;$('login').style.display='none';$('app').style.display='block';boot();
+    founder=data;try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}$('login').style.display='none';$('app').style.display='block';boot();
   }catch(e){fail('Cannot reach auth database. Check connection and retry.');}
   function fail(t){msg.className='l-msg err';msg.textContent=t;btn.disabled=false;$('lbox').classList.remove('shake');void $('lbox').offsetWidth;$('lbox').classList.add('shake');}
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('login').style.display!=='none')doLogin();});
-function signOut(){location.reload();}
+function signOut(){try{localStorage.removeItem('be_session');}catch(_){}location.reload();}
 
 /* ═══════════ NAV ═══════════ */
 function go(p){
@@ -576,6 +606,10 @@ function tick(){
   const t=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})+'<br>'+n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   ['clock1','clock2','clock3','clock4'].forEach(id=>{const e=$(id);if(e)e.innerHTML=t;});
 }
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NETRED=[{lat:25.2,lng:55.3},{lat:25.3,lng:51.5},{lat:24.7,lng:46.7},{lat:29.4,lng:48},{lat:23.6,lng:58.4},{lat:12.97,lng:77.59},{lat:19.07,lng:72.88}];
+const NETBLUE=[{lat:51.5,lng:-0.1},{lat:43.7,lng:-79.4},{lat:-33.9,lng:151.2},{lat:1.35,lng:103.8},{lat:40.7,lng:-74},{lat:28.6,lng:77.2},{lat:13.08,lng:80.27}];
+const HQ={lat:9.93,lng:76.26},ED={lat:10.78,lng:76.07};
 function initGlobe(){
   try{
     if(!window.Globe)throw 0;
@@ -585,12 +619,28 @@ function initGlobe(){
       .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true).atmosphereColor('#4d9fff').atmosphereAltitude(.2)
       .width(380).height(380)
-      .pointsData([{lat:9.93,lng:76.26,c:'#ed1f51',s:.9},{lat:10.78,lng:76.07,c:'#00e08a',s:.6}])
-      .pointLat('lat').pointLng('lng').pointColor('c').pointAltitude(.02).pointRadius(d=>d.s*.4)
-      .ringsData([{lat:9.93,lng:76.26,c:'#ed1f51'},{lat:10.78,lng:76.07,c:'#00e08a'}])
-      .ringLat('lat').ringLng('lng').ringColor(d=>()=>d.c).ringMaxRadius(4).ringPropagationSpeed(2).ringRepeatPeriod(1400);
-    g.controls().autoRotate=true;g.controls().autoRotateSpeed=.55;g.controls().enableZoom=false;
-    g.pointOfView({lat:16,lng:78,altitude:2.1});
+      .pointLat('lat').pointLng('lng').pointColor(d=>d.c).pointAltitude(.015).pointRadius(d=>d.s||.35)
+      .ringLat('lat').ringLng('lng').ringColor(d=>()=>d.c).ringMaxRadius(4).ringPropagationSpeed(2).ringRepeatPeriod(1400)
+      .arcColor(()=>['rgba(237,31,81,.05)','rgba(240,88,37,.85)']).arcDashLength(.45).arcDashGap(.25).arcDashAnimateTime(1700).arcStroke(.4).arcAltitudeAutoScale(.4);
+    g.controls().autoRotate=true;g.controls().autoRotateSpeed=.35;g.controls().enableZoom=false;
+    window._g=g;
+    if(RM){
+      g.pointsData([...NETRED.map(p=>({...p,c:'#ed1f51'})),...NETBLUE.map(p=>({...p,c:'#4d9fff'})),{...HQ,c:'#ed1f51',s:.6},{...ED,c:'#00e08a',s:.45}]);
+      g.arcsData([...NETRED,...NETBLUE].map(p=>({startLat:p.lat,startLng:p.lng,endLat:HQ.lat,endLng:HQ.lng})));
+      g.ringsData([{...HQ,c:'#ed1f51'},{...ED,c:'#00e08a'}]);
+      g.pointOfView({lat:10.3,lng:76.4,altitude:1.4});g.controls().autoRotateSpeed=.55;return;
+    }
+    /* cinematic boot: dots → lines → Kerala → pulse → zoom → mission acquired */
+    g.pointOfView({lat:16,lng:60,altitude:2.6});
+    const red=NETRED.map(p=>({...p,c:'#ed1f51'}));
+    const blue=NETBLUE.map(p=>({...p,c:'#4d9fff'}));
+    setTimeout(()=>g.pointsData(red),900);
+    setTimeout(()=>g.pointsData([...red,...blue]),1800);
+    setTimeout(()=>g.arcsData([...NETRED,...NETBLUE].map(p=>({startLat:p.lat,startLng:p.lng,endLat:HQ.lat,endLng:HQ.lng}))),2700);
+    setTimeout(()=>{g.pointsData([...red,...blue,{...HQ,c:'#ed1f51',s:.65},{...ED,c:'#00e08a',s:.5}]);g.ringsData([{...HQ,c:'#ed1f51'},{...ED,c:'#00e08a'}]);},3700);
+    setTimeout(()=>g.pointOfView({lat:10.3,lng:76.4,altitude:1.15},2000),4600);
+    setTimeout(()=>{$('missionTag').style.opacity=1;},6300);
+    setTimeout(()=>{$('missionTag').style.opacity=0;g.controls().autoRotateSpeed=.55;},8200);
   }catch(e){$('globeEl').innerHTML='<div class="globe-fallback"></div>';}
 }
 
@@ -610,14 +660,14 @@ async function loadMaster(){
     const lm=new Date(yr,mo-1,1);
     const newLM=students.filter(s=>inMonth(s.range.start,lm.getMonth(),lm.getFullYear())).length;
     /* 6-month admissions series */
-    const months=[],mvals=[];
-    for(let i=5;i>=0;i--){const d=new Date(yr,mo-i,1);months.push(d.toLocaleDateString('en-IN',{month:'short'}));mvals.push(students.filter(s=>inMonth(s.range.start,d.getMonth(),d.getFullYear())).length);}
+    const months=[],mvals=[],mlists=[];
+    for(let i=5;i>=0;i--){const d=new Date(yr,mo-i,1);months.push(d.toLocaleDateString('en-IN',{month:'short'}));const arr=students.filter(s=>inMonth(s.range.start,d.getMonth(),d.getFullYear()));mvals.push(arr.length);mlists.push(arr);}
     /* batches */
     const bm={};
     for(const s of students){if(s.batch==='Unassigned')continue;(bm[s.batch]||={name:s.batch,students:[],progs:{},trainers:{},starts:[],ends:[]});bm[s.batch].students.push(s);bm[s.batch].progs[s.prog]=(bm[s.batch].progs[s.prog]||0)+1;bm[s.batch].trainers[s.trainer]=(bm[s.batch].trainers[s.trainer]||0)+1;if(s.range.start)bm[s.batch].starts.push(+s.range.start);if(s.range.end)bm[s.batch].ends.push(+s.range.end);}
     const mode=o=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
     const batches=Object.values(bm).map(b=>{b.prog=mode(b.progs);b.trainer=mode(b.trainers);b.start=b.starts.length?new Date(Math.min(...b.starts)):null;b.end=b.ends.length?new Date(Math.max(...b.ends)):null;b.active=b.students.filter(s=>s.status==='active').length;return b;});
-    S.master={students,stat,prog,newTM,newLM,months,mvals,batches,total:students.length};
+    S.master={students,stat,prog,newTM,newLM,months,mvals,mlists,batches,total:students.length};
     setLight('master','ok');
   }catch(e){setLight('master','fail','check sheet sharing = anyone with link');}
 }
@@ -630,7 +680,7 @@ async function loadAssess(){
     if(!leads.length)throw 0;
     const now=new Date();let week=0,month=0;
     const months=[],mvals=[];
-    for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({k:d.getFullYear()+'-'+d.getMonth(),lab:d.toLocaleDateString('en-IN',{month:'short'}),v:0});}
+    for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({k:d.getFullYear()+'-'+d.getMonth(),lab:d.toLocaleDateString('en-IN',{month:'short'}),v:0,rows:[]});}
     const couns={},stats={};
     for(const r of leads){
       if(cC>=0){const c=String(r[cC]||'').trim();if(c)(couns[c]||={n:0,tm:0,last:null}).n++;}
@@ -638,11 +688,11 @@ async function loadAssess(){
       if(cD>=0){const d=new Date(r[cD]);if(!isNaN(d)){
         if(Date.now()-d<7*864e5)week++;
         if(d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()){month++;if(cC>=0){const c=String(r[cC]||'').trim();if(c&&couns[c])couns[c].tm++;}}
-        const k=d.getFullYear()+'-'+d.getMonth();const slot=months.find(m=>m.k===k);if(slot)slot.v++;
+        const k=d.getFullYear()+'-'+d.getMonth();const slot=months.find(m=>m.k===k);if(slot){slot.v++;slot.rows.push(r);}
         if(cC>=0){const c=String(r[cC]||'').trim();if(c&&couns[c]&&(!couns[c].last||d>couns[c].last))couns[c].last=d;}
       }}
     }
-    S.assess={leads,total:leads.length,week,month,months,couns,stats,cols:{cN,cC,cD,cS}};
+    S.assess={leads,total:leads.length,week,month,months,couns,stats,head,cols:{cN,cC,cD,cS}};
     setLight('assess','ok');
   }catch(e){setLight('assess','fail','check sheet sharing');}
 }
@@ -709,8 +759,9 @@ function renderDeck(){
   if(M){const p=Math.min(1,M.total/1000);
     $('missionBox').innerHTML=`<div style="display:flex;align-items:center;gap:14px"><div class="ringbox" style="width:74px;height:74px">${ring(p,'#4d9fff',74,6)}<div class="rc" style="font-size:15px">${Math.round(p*100)}%</div></div><div><div class="num" style="font-size:17px">${fmt(M.total)} / 1,000</div><div style="font-size:10.5px;color:var(--ok);font-family:Barlow;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">On Track</div></div></div>`;
     const soon=M.batches.filter(b=>b.end&&b.active>0&&(b.end-Date.now())/864e5<=21&&(b.end-Date.now())>=0).sort((a,b)=>a.end-b.end).slice(0,4);
-    $('endingBox').innerHTML=soon.length?soon.map(b=>`<div class="li"><i class="ti ti-flag-3 ck" style="color:var(--warn)"></i><span class="t">${esc(b.name)}</span><span class="m">${b.end.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>`).join(''):'<div class="empty">Nothing ending in 21 days.</div>';
-    $('admTrend').innerHTML=areaChart(M.months,M.mvals,c);
+    S.ui=S.ui||{};S.ui.ending=soon;
+    $('endingBox').innerHTML=soon.length?soon.map((b,bi)=>`<div class="li clk" onclick="openBatch(${bi})"><i class="ti ti-flag-3 ck" style="color:var(--warn)"></i><span class="t">${esc(b.name)}</span><span class="m">${b.end.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>`).join(''):'<div class="empty">Nothing ending in 21 days.</div>';
+    $('admTrend').innerHTML=areaChart(M.months,M.mvals,c,460,150,'openAdmMonth');
   } else {$('missionBox').innerHTML='<div class="empty">Master roster offline.</div>';$('endingBox').innerHTML='<div class="empty">—</div>';$('admTrend').innerHTML='<div class="note"><b>Master roster offline</b> — fix sharing, refresh.</div>';}
   /* command cards */
   const card=(id,color,icon,title,stats,page,href)=>`<div class="cmdc" style="border-color:${rgba(color,.35)};box-shadow:0 0 40px ${rgba(color,.06)}" onclick="${href?`window.open('${href}','_blank')`:`go('${page}')`}">
@@ -726,6 +777,7 @@ function renderDeck(){
   const names={master:'Master Roster',assess:'Assessments',acad:'Academics DB',media:'Media DB',proj:'Projects DB'};
   $('healthBox').innerHTML=Object.entries(names).map(([k,n])=>`<div class="li"><span class="light ${src[k]==='ok'?'g':src[k]==='fail'?'r':'p'}" style="width:8px;height:8px;border-radius:50%"></span><span class="t" style="font-weight:500;color:var(--steel)">${n}</span><span class="m" style="color:${src[k]==='ok'?'var(--ok)':'var(--warn)'}">${src[k]==='ok'?'Operational':'Down'}</span></div>`).join('');
   renderSales();
+  wireKpis('deckKpis',[()=>kd('total'),()=>kd('active'),()=>kd('new'),()=>kd('trainers'),()=>kd('completion'),()=>kd('revenue')]);dockify($('deckKpis'));
   armRings($('pg-deck'));
 }
 
@@ -745,18 +797,18 @@ function renderSales(){
     kpiTile('Counsellors',Object.keys(A.couns).length||'—','active in pipeline','',c);
   /* funnel from status buckets */
   const stEntries=Object.entries(A.stats);
-  let stages=[['Leads',A.total]];
+  let stages=[['Leads',A.total,'all']];
   const pick=(...ns)=>stEntries.filter(([k])=>ns.some(n=>k.toLowerCase().includes(n))).reduce((a,[,v])=>a+v,0);
   const contacted=pick('contact','call'),interested=pick('interest'),demo=pick('demo','assess'),adm=pick('admit','enrol','join','convert');
-  if(contacted)stages.push(['Contacted',contacted]);
-  if(interested)stages.push(['Interested',interested]);
-  if(demo)stages.push(['Assessment Done',demo]);
-  stages.push(['Enrolled',M?M.total:adm||0]);
+  if(contacted)stages.push(['Contacted',contacted,'contact|call']);
+  if(interested)stages.push(['Interested',interested,'interest']);
+  if(demo)stages.push(['Assessment Done',demo,'demo|assess']);
+  stages.push(['Enrolled',M?M.total:adm||0,'enrolled']);
   const fw=210,fh=stages.length*34+10;
   const fsvg=stages.map((s,i)=>{const wTop=fw*(1-i*.16),wBot=fw*(1-(i+1)*.16),y=8+i*32;
     return `<polygon points="${(fw-wTop)/2},${y} ${(fw+wTop)/2},${y} ${(fw+wBot)/2},${y+26} ${(fw-wBot)/2},${y+26}" fill="${rgba(c,.06+i*.05)}" stroke="${rgba(c,.55)}" stroke-width="1.2" style="filter:drop-shadow(0 0 6px ${rgba(c,.35)})"/>`;}).join('');
   $('funnelBox').innerHTML=`<div class="funnel-wrap"><svg width="${fw}" height="${fh}" viewBox="0 0 ${fw} ${fh}">${fsvg}</svg>
-    <div class="f-legend">${stages.map((s,i)=>`<div class="f-row"><span class="idx">${i+1}</span><span class="fn">${s[0]}</span><span class="fv">${fmt(s[1])}</span><span class="fp">${Math.round(s[1]/A.total*100)}%</span></div>`).join('')}
+    <div class="f-legend">${stages.map((s,i)=>`<div class="f-row clk" onclick="openStage('${s[2]}','${s[0]}')"><span class="idx">${i+1}</span><span class="fn">${s[0]}</span><span class="fv">${fmt(s[1])}</span><span class="fp">${Math.round(s[1]/A.total*100)}%</span></div>`).join('')}
     <div style="margin-top:10px"><span class="eb">Overall conversion</span><div class="num" style="font-size:22px;color:${c}">${conv!==null?conv+'%':'—'}</div></div></div></div>`;
   /* flow: counsellors → total → statuses */
   const topC=Object.entries(A.couns).sort((a,b)=>b[1].n-a[1].n).slice(0,5);
@@ -776,7 +828,7 @@ function renderSales(){
       <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.4)" letter-spacing="1">TOTAL LEADS</text>${left}${right}</svg>
       <div style="text-align:center;font-size:11px;color:${c};font-weight:600;margin-top:4px">↑ ${A.week} new leads this week</div>`;
   } else $('flowBox').innerHTML='<div class="note"><b>Counsellor column not found</b> in the sheet\'s first tab — tell me the tab name that has it and I retarget the parser.</div>';
-  $('leadTrend').innerHTML=areaChart(A.months.map(m=>m.lab),A.months.map(m=>m.v),c);
+  $('leadTrend').innerHTML=areaChart(A.months.map(m=>m.lab),A.months.map(m=>m.v),c,460,150,'openLeadMonth');
   /* status donut */
   if(topS.length){
     const cols=[c,'#4d9fff','#ffc24b','#8a63ff','#ed1f51'];
@@ -786,12 +838,13 @@ function renderSales(){
   } else $('leadStatus').innerHTML='<div class="empty">No status column in first tab.</div>';
   /* latest */
   const{cN,cC,cS:cSt}=A.cols;
-  $('latestLeads').innerHTML=A.leads.slice(-7).reverse().map(r=>{const meta=[cC>=0?r[cC]:'',cSt>=0?r[cSt]:''].filter(x=>x&&String(x).trim()).join(' · ');
-    return `<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[cN])}</span><span class="m">${esc(meta)}</span></div>`;}).join('');
+  const latest=A.leads.slice(-7).reverse();S.ui.latest=latest;
+  $('latestLeads').innerHTML=latest.map((r,i2)=>{const meta=[cC>=0?r[cC]:'',cSt>=0?r[cSt]:''].filter(x=>x&&String(x).trim()).join(' · ');
+    return `<div class="li clk" onclick="openLead(${i2})"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[cN])}</span><span class="m">${esc(meta)}</span></div>`;}).join('');
   /* counsellor table */
-  const rowsC=Object.entries(A.couns).sort((a,b)=>b[1].n-a[1].n);
+  const rowsC=Object.entries(A.couns).sort((a,b)=>b[1].n-a[1].n);S.ui=S.ui||{};S.ui.couns=rowsC;
   const mx=rowsC[0]?.[1].n||1;
-  $('counsBox').innerHTML=rowsC.length?rowsC.map(([n,o],i)=>`<div class="brow">
+  $('counsBox').innerHTML=rowsC.length?rowsC.map(([n,o],i)=>`<div class="brow clk" onclick="openCouns(${i})">
     <span class="av" style="background:${AVC[i%AVC.length]}">${initials(n)}</span>
     <span class="bn" style="width:104px;color:var(--bone);font-weight:600">${esc(n)}</span>
     <div class="btrack"><div class="bfill" data-w="${Math.round(o.n/mx*100)}"></div></div>
@@ -799,6 +852,7 @@ function renderSales(){
     <span style="width:88px;text-align:right;font-size:10.5px;color:var(--ghost)">${o.tm} this month</span>
     <span style="width:74px;text-align:right;font-size:10.5px;color:var(--ghost)">${o.last?o.last.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span></div>`).join('')
     :'<div class="empty">Counsellor data not in first tab.</div>';
+  wireKpis('salesKpis',[()=>sd('leads'),()=>sd('week'),()=>sd('month'),()=>kd('total'),()=>sd('conv'),()=>sd('couns')]);dockify($('salesKpis'));
   armRings($('pg-sales'));
 }
 
@@ -814,10 +868,10 @@ function renderMedia(){
     kpiTile('Delivered · Month',fmt(V.doneTM),new Date().toLocaleDateString('en-IN',{month:'long'}),'up',c);
   const colDef=[['queue','Queued','#ffc24b'],['prog','In Production','#ff8a2a'],['review','In Review','#c792ff'],['done','Delivered','#2fe08c']];
   $('kanban').innerHTML=`<div class="kb">${colDef.map(([k,t,col])=>{
-    const items=k==='done'?V.cols.done.slice(-5).reverse():V.cols[k].slice(0,5);
+    const items=k==='done'?V.cols.done.slice(-5).reverse():V.cols[k].slice(0,5);S.ui=S.ui||{};(S.ui.kan=S.ui.kan||{})[k]=items;
     const extra=V.cols[k].length-items.length;
     return `<div class="kcol" style="border-color:${rgba(col,.3)}"><div class="kh"><span class="kt" style="color:${col}">${t}</span><span class="kn" style="color:${col}">${V.cols[k].length}</span></div>
-    ${items.map(x=>`<div class="kcard"><div class="kc-t">${esc(x.topic||x.type||'Task')}</div><div class="kc-m"><span>${esc(x.assigned_to||'—')}</span><span>${x.date?new Date(x.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span></div></div>`).join('')||'<div class="empty" style="padding:6px 0">Empty</div>'}
+    ${items.map((x,xi)=>`<div class="kcard clk" onclick="openTask('${k}',${xi})"><div class="kc-t">${esc(x.topic||x.type||'Task')}</div><div class="kc-m"><span>${esc(x.assigned_to||'—')}</span><span>${x.date?new Date(x.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span></div></div>`).join('')||'<div class="empty" style="padding:6px 0">Empty</div>'}
     ${extra>0?`<div class="kmore">+ ${extra} more</div>`:''}</div>`;}).join('')}</div>`;
   /* mix by type */
   const types={};V.all.forEach(t=>{const ty=String(t.type||'Other').trim()||'Other';types[ty]=(types[ty]||0)+1;});
@@ -840,6 +894,7 @@ function renderMedia(){
   $('calBox').innerHTML=`<table class="cal"><tr>${days.map((d,i)=>`<th class="${i===dow?'today':''}">${d}</th>`).join('')}</tr><tr>${counts.map(v=>`<td class="${v?'':'z'}">${v||'–'}</td>`).join('')}</tr></table><div style="font-size:10.5px;color:var(--ghost);margin-top:10px">Tasks dated this week · Production Suite</div>`;
   /* delivered */
   $('deliveredBox').innerHTML=V.cols.done.slice(-8).reverse().map(t=>`<div class="li"><i class="ti ti-circle-check ck" style="color:var(--ok)"></i><span class="t">${esc(t.topic||t.type||'Task')}</span><span class="m">${esc(t.assigned_to||'')} · ${t.date?new Date(t.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span></div>`).join('')||'<div class="empty">Nothing delivered yet.</div>';
+  dockify($('mediaKpis'));
   armRings($('pg-media'));
 }
 
@@ -902,6 +957,83 @@ function buildBriefing(){
     if(r.length)items.push({i:'ti-alert-triangle',c:'var(--bad)',t:`<b>${r.length} project${r.length>1?'s':''} at risk</b> <span class="why">— ${esc(r.map(p=>p.name).slice(0,2).join(', '))}.</span>`});}
   Object.entries(src).filter(([,v])=>v==='fail').forEach(([k])=>items.push({i:'ti-plug-x',c:'var(--bad)',t:`<b>${({master:'Master roster',assess:'Assessment sheet',acad:'Academics DB',media:'Media DB',proj:'Projects DB'})[k]} offline</b> <span class="why">— fix hint in the rail.</span>`}));
   $('briefBox').innerHTML=items.length?items.slice(0,6).map(x=>`<div class="brief"><i class="ti ${x.i}" style="color:${x.c}"></i><span>${x.t}</span></div>`).join(''):'<div class="brief"><i class="ti ti-circle-check" style="color:var(--ok)"></i><span><b>All quiet.</b> <span class="why">No urgent actions across departments.</span></span></div>';
+}
+
+/* ═══════════ INTERACTION ENGINE: sheets · dock · jarvis mic ═══════════ */
+function openSheet(sub,title,meta,body){$('shSub').textContent=sub;$('shTitle').textContent=title;$('shMeta').textContent=meta||'';$('shBody').innerHTML=body;$('sheetBg').classList.add('on');}
+function closeSheet(){$('sheetBg').classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+const progChip=p=>`<span class="chip" style="border-color:rgba(77,159,255,.4);color:#8fc4ff">${esc(p)}</span>`;
+const statChip=s=>{const m={active:['In Progress','#2fe08c'],complete:['Complete','#8fc4ff'],frozen:['On Freeze','#ffc24b'],dropped:['Dropped','#ff4d5e']};const[t,c]=m[s]||[s,'#999'];return `<span class="chip" style="border-color:${rgba(c.replace('#',''),0)||''};color:${c};border-color:${c}55">${t}</span>`;};
+const stuRow=s=>`<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(s.name)}</span><span class="m">${esc(s.batch)}</span>${progChip(s.prog)} ${statChip(s.status)}</div>`;
+const cells=arr=>`<div class="sh-grid">${arr.map(([l,n])=>`<div class="sh-cell"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('')}</div>`;
+
+function kd(kind){const M=S.master,D=S.acad;
+  if(kind==='revenue')return openSheet('Finance','Revenue — not wired yet','','<div class="note"><b>No finance source connected.</b> Share a revenue Google Sheet (monthly totals or fee entries) and this becomes a live panel: monthly target ring, course-fee split, trend — real numbers only.</div>');
+  if(!M)return openSheet('Academics','Master roster offline','','<div class="note"><b>Sheet unreachable.</b> Fix sharing, refresh.</div>');
+  if(kind==='total')return openSheet('Academics','All Students',fmt(M.total)+' lifetime',cells([['Active',M.stat.active||0],['Complete',M.stat.complete||0],['Freeze',M.stat.frozen||0],['Dropped',M.stat.dropped||0],['Foundation',M.prog.Foundation||0],['Upgrade',M.prog.Upgrade||0],['Elite',M.prog.Elite||0],['IELTS',(M.prog['IELTS']||0)+(M.prog['IELTS 1:1']||0)],['Batches',M.batches.length]])+M.students.slice(0,40).map(stuRow).join('')+(M.total>40?`<div class="empty">+ ${M.total-40} more in the sheet</div>`:''));
+  if(kind==='active')return openSheet('Academics','Active Students',fmt(M.stat.active||0)+' in progress',M.students.filter(s=>s.status==='active').map(stuRow).join('')||'<div class="empty">None.</div>');
+  if(kind==='new')return openSheet('Academics','New This Month',fmt(M.newTM)+' joined · '+new Date().toLocaleDateString('en-IN',{month:'long'}),M.mlists[5].map(stuRow).join('')||'<div class="empty">No admissions logged this month yet.</div>');
+  if(kind==='trainers'){const rows=(D?.trainers||[]).map(t=>{const load=M.students.filter(s=>s.status==='active'&&s.trainer.toLowerCase().includes(String(t.name).toLowerCase())).length;return `<div class="li"><span class="av" style="background:${AVC[(t.name.length)%AVC.length]}">${initials(t.name)}</span><span class="t">${esc(t.name)}</span><span class="m">${load} active students</span></div>`;}).join('');
+    return openSheet('Academics','Active Trainers',(D?.trainers.length||0)+' on roster · '+(D?.pending||0)+' tasks open',rows||'<div class="note"><b>Academics DB offline.</b></div>');}
+  if(kind==='completion')return openSheet('Academics','Completed Students',fmt(M.stat.complete||0)+' finished the journey',M.students.filter(s=>s.status==='complete').map(stuRow).join('')||'<div class="empty">None yet.</div>');
+}
+function sd(kind){const A=S.assess;if(!A)return;
+  if(kind==='leads')return openSheet('Sales','All Leads',fmt(A.total)+' in pipeline',cells([['This week',A.week],['This month',A.month],['Counsellors',Object.keys(A.couns).length]])+'<div class="empty">Tap counsellor rows or trend points for name-level detail.</div>');
+  if(kind==='week'){const rows=A.leads.filter(r=>{const d=new Date(r[A.cols.cD]);return !isNaN(d)&&Date.now()-d<7*864e5;}).slice(-30).reverse();return openSheet('Sales','Leads · Last 7 Days',rows.length+' fresh',rows.map(r=>`<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[A.cols.cN])}</span><span class="m">${esc(A.cols.cC>=0?r[A.cols.cC]:'')}</span></div>`).join('')||'<div class="empty">None.</div>');}
+  if(kind==='month')return openLeadMonth(5);
+  if(kind==='conv')return openSheet('Sales','Lead → Student Conversion',(S.master?Math.round(S.master.total/A.total*100):'—')+'% lifetime','<div class="note">Computed as enrolled students (master roster) ÷ total leads (assessment sheet). Directional — periods differ.</div>');
+  if(kind==='couns'){const rows=(S.ui?.couns||[]).map((x,i)=>`<div class="li clk" onclick="openCouns(${i})"><span class="av" style="background:${AVC[i%AVC.length]}">${initials(x[0])}</span><span class="t">${esc(x[0])}</span><span class="m">${x[1].n} leads</span></div>`).join('');return openSheet('Sales','Counsellors',Object.keys(A.couns).length+' active',rows);}
+}
+function openCouns(i){const A=S.assess,[name,o]=S.ui.couns[i];const{cN,cC,cD}=A.cols;
+  const mine=A.leads.filter(r=>String(r[cC]||'').trim()===name);
+  const recent=mine.slice(-12).reverse().map(r=>{const d=cD>=0?new Date(r[cD]):null;return `<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[cN])}</span><span class="m">${d&&!isNaN(d)?d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</span></div>`;}).join('');
+  openSheet('Counsellor Profile',name,'Full profile page coming — this is the live snapshot',cells([['Total leads',o.n],['This month',o.tm],['Last lead',o.last?o.last.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—']])+'<div class="eb" style="margin:6px 0 4px">Recent leads</div>'+recent);}
+function openAdmMonth(i){const M=S.master;if(!M)return;const list=M.mlists[i]||[];
+  openSheet('Admissions',M.months[i]+' — Students Joined',list.length+' enrolled',list.map(stuRow).join('')||'<div class="empty">No admissions that month.</div>');}
+function openLeadMonth(i){const A=S.assess;if(!A)return;const slot=A.months[i];const{cN,cC}=A.cols;
+  openSheet('Leads',slot.lab+' — Leads Entered',slot.v+' leads',slot.rows.slice(0,50).map(r=>`<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[cN])}</span><span class="m">${esc(cC>=0?r[cC]:'')}</span></div>`).join('')||'<div class="empty">None logged.</div>');}
+function openStage(kind,label){const A=S.assess;if(!A)return;const{cN,cC,cS}=A.cols;let rows;
+  if(kind==='all')rows=A.leads;
+  else if(kind==='enrolled')return kd('total');
+  else{const keys=kind.split('|');rows=A.leads.filter(r=>keys.some(k=>String(cS>=0?r[cS]:'').toLowerCase().includes(k)));}
+  openSheet('Funnel Stage',label,rows.length+' leads',rows.slice(0,50).map(r=>`<div class="li"><i class="ti ti-chevron-right ck"></i><span class="t">${esc(r[cN])}</span><span class="m">${esc(cC>=0?r[cC]:'')}</span></div>`).join(''));}
+function openLead(i){const A=S.assess,r=S.ui.latest[i];
+  const body=A.head.map((h,ci)=>h&&String(r[ci]||'').trim()?`<div class="li"><span class="m" style="width:150px;flex-shrink:0;text-align:left">${esc(h)}</span><span class="t" style="font-weight:500">${esc(r[ci])}</span></div>`:'').join('');
+  openSheet('Lead Detail',String(r[A.cols.cN]||'Lead'),'Every field from the sheet row',body);}
+function openTask(k,i){const t=S.ui.kan[k][i];
+  const F=[['Topic',t.topic],['Type',t.type],['Owner',t.assigned_to],['Status',t.status],['Assigned',t.assigned_date],['Due / Date',t.date]];
+  openSheet('Media Task',t.topic||t.type||'Task','Production Suite record',F.map(([l,v])=>v?`<div class="li"><span class="m" style="width:110px;text-align:left">${l}</span><span class="t" style="font-weight:500">${esc(v)}</span></div>`:'').join(''));}
+function openBatch(i){const b=S.ui.ending[i];
+  openSheet('Batch',b.name,(b.trainer||'')+' · ends '+b.end.toLocaleDateString('en-IN',{day:'numeric',month:'short'}),cells([['Students',b.students.length],['Active',b.active],['Programme',b.prog]])+b.students.map(stuRow).join(''));}
+
+function wireKpis(id,fns){const box=$(id);if(!box)return;[...box.children].forEach((el,i)=>{if(fns[i])el.onclick=fns[i];});}
+function dockify(box){if(!box||box.dataset.dock||RM)return;box.dataset.dock=1;
+  box.addEventListener('mousemove',e=>{[...box.children].forEach(k=>{const r=k.getBoundingClientRect();const d=Math.abs(e.clientX-(r.left+r.width/2));const s=Math.max(0,1-d/300);k.style.transform=`translateY(${(-9*s).toFixed(1)}px) scale(${(1+.06*s).toFixed(3)})`;k.style.zIndex=Math.round(20*s);});});
+  box.addEventListener('mouseleave',()=>[...box.children].forEach(k=>{k.style.transform='';k.style.zIndex='';}));}
+
+/* ── JARVIS mic-reactive globe ── */
+let _jOn=false,_jCtx,_jAn,_jBuf,_jRaf;
+async function toggleJarvis(){
+  const orb=$('orbBtn'),sub=$('jsSub');
+  if(_jOn){_jOn=false;cancelAnimationFrame(_jRaf);try{_jCtx&&_jCtx.close();}catch(_){}_jCtx=null;
+    $('globeEl').style.transform='';orb.style.boxShadow='';if(window._g)_g.controls().autoRotateSpeed=.55;
+    sub.textContent='Tap the orb · JARVIS listens';return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _jCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const srcN=_jCtx.createMediaStreamSource(stream);
+    _jAn=_jCtx.createAnalyser();_jAn.fftSize=256;srcN.connect(_jAn);
+    _jBuf=new Uint8Array(_jAn.frequencyBinCount);_jOn=true;
+    sub.textContent='LIVE — JARVIS is listening';
+    const loop=()=>{if(!_jOn)return;_jAn.getByteFrequencyData(_jBuf);
+      const v=_jBuf.reduce((a,b)=>a+b,0)/_jBuf.length/255;
+      $('globeEl').style.transform=`scale(${(1+v*.22).toFixed(3)})`;
+      if(window._g)_g.controls().autoRotateSpeed=.55+v*8;
+      orb.style.boxShadow=`0 0 ${30+v*80}px rgba(237,31,81,${(.6+v*.4).toFixed(2)}),0 0 ${80+v*180}px rgba(237,31,81,.28)`;
+      _jRaf=requestAnimationFrame(loop);};
+    loop();
+  }catch(e){sub.textContent='Mic blocked — allow it in the browser bar';}
 }
 </script>
 </body>
