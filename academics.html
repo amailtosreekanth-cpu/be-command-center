@@ -69,6 +69,17 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .loading{color:var(--tx3);font-size:12px;padding:20px;text-align:center;}
 .warn-box{background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6;}
 .warn-box b{color:var(--yellow);}
+
+.daychips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.dchip{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;user-select:none;transition:all .15s}
+.dchip.on{background:var(--gk);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(237,31,81,.35)}
+.mrow{display:flex;gap:9px}
+.mrow>*{flex:1}
+.mhint{font-size:10.5px;color:var(--tx3);margin:-4px 0 10px;line-height:1.5}
+.rawwrap{margin-bottom:16px}
+.rawsum{cursor:pointer;font-family:Rajdhani,sans-serif;font-size:15px;font-weight:700;padding:16px 20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;color:var(--tx2);list-style:none}
+.rawsum::before{content:'▸ ';color:var(--k1)}
+details[open] .rawsum::before{content:'▾ '}
 </style>
 </head>
 <body>
@@ -132,7 +143,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
-  <!-- LIVE GOOGLE SHEET DATA — visible to everyone -->
+  <details class="rawwrap"><summary class="rawsum">Raw sheet data · advanced view (Master list · Schedule · Batch tracker)</summary>
   <div class="section">
     <h2>Master Student List <span class="tag">Live from Sheet</span></h2>
     <div id="sheetStudents" class="loading">Loading live data from Google Sheet…</div>
@@ -145,6 +156,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
     <h2>Batch / Session Tracking <span class="tag">Live from Sheet</span></h2>
     <div id="sheetBatches" class="loading">Loading live data from Google Sheet…</div>
   </div>
+  </details>
   <div class="section">
     <h2>Media / Production Suite</h2>
     <div class="warn-box"><b>Heads up:</b> Production Suite is a static site, not a database — there's nothing to "pull" from it via API. I can link to it directly, or if you want real live media stats here (videos edited, reels pending, etc.), that data needs to live in a Google Sheet or Supabase table like Academics does. Tell me which and I'll wire it.</div>
@@ -159,12 +171,27 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('trainer')">Cancel</button><button class="btn-save" onclick="saveTrainer()">Save</button></div>
 </div></div>
 
-<div class="modal-bg" id="modalBatch"><div class="modal">
+<div class="modal-bg" id="modalBatch"><div class="modal" style="width:440px">
   <h3>Create Batch</h3>
-  <input id="m_b_name" placeholder="Batch name"/>
+  <input id="m_b_name" placeholder="Batch name (e.g. Phrase Factory)"/>
   <select id="m_b_trainer"></select>
-  <input id="m_b_schedule" placeholder="e.g. Mon,Wed 8PM"/>
-  <select id="m_b_type"><option value="group">Group</option><option value="one-on-one">1-on-1</option><option value="elite">Elite</option></select>
+  <select id="m_b_type" onchange="typeChanged()">
+    <option value="group-foundation">Group · Foundation</option>
+    <option value="group-upgrade">Group · Upgrade</option>
+    <option value="elite-oneonone">Elite · One-on-One (20 sessions)</option>
+    <option value="custom-elite">Customized Elite (flexible sessions)</option>
+    <option value="ielts-group">IELTS · Group</option>
+    <option value="ielts-oneonone">IELTS · One-on-One</option>
+    <option value="recorded" disabled>Recorded Course — separate dashboard, coming</option>
+  </select>
+  <div class="mhint" id="m_b_hint">32 group classes · 8 masterclasses · 2 one-on-ones over 2 months</div>
+  <div class="daychips" id="m_b_days"></div>
+  <div class="mhint">Tap class days. Masterclass day is separate below.</div>
+  <div class="mrow">
+    <select id="m_b_mc"><option value="Sat">MC · Saturday</option><option value="Sun">MC · Sunday</option><option value="Fri">MC · Friday</option><option value="">No masterclass</option></select>
+    <input id="m_b_time" placeholder="Time · e.g. 8:00–9:00 PM"/>
+  </div>
+  <input id="m_b_sessions" type="number" placeholder="Total sessions" style="display:none"/>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batch')">Cancel</button><button class="btn-save" onclick="saveBatch()">Save</button></div>
 </div></div>
 
@@ -216,12 +243,14 @@ async function doLogin(){
   const { data, error } = await sb.from('roles').select('*').eq('username', u).eq('password', p).single();
   if (error || !data) { document.getElementById('lerr').style.display = 'block'; return; }
   currentUser = data;
+  try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   boot();
 }
 
 function logout(){
+  try{localStorage.removeItem('be_session');}catch(_){}
   currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
@@ -269,12 +298,12 @@ async function loadHeadView(){
   document.getElementById('trainerTable').innerHTML = (trainers||[]).map(t => `
     <tr><td>${t.name}</td><td>${t.type}</td>
     <td><span class="badge ${t.status==='active'?'b-active':'b-inactive'}">${t.status}</span></td>
-    <td><button class="act-btn" onclick="toggleTrainer('${t.id}','${t.status}')">${t.status==='active'?'Deactivate':'Activate'}</button></td></tr>
+    <td><button class="act-btn" onclick="deleteTrainer('${t.id}','${esc(t.name)}')" style="border-color:rgba(237,31,81,.4);color:var(--k1)">Delete</button></td></tr>
   `).join('') || '<tr><td colspan="4" class="empty">No trainers yet</td></tr>';
 
   const { data: batches } = await sb.from('batches').select('*, trainers(name)').order('created_at');
   document.getElementById('batchTable').innerHTML = (batches||[]).map(b => `
-    <tr><td>${b.name}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td><td>${b.batch_type}</td>
+    <tr><td>${b.name}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td><td>${courseLabel(b.batch_type)}${b.sessions_total?' · '+b.sessions_total+' sessions':''}</td>
     <td><button class="act-btn" onclick="deleteBatch('${b.id}')">Delete</button></td></tr>
   `).join('') || '<tr><td colspan="5" class="empty">No batches yet</td></tr>';
 
@@ -319,6 +348,7 @@ async function populateTrainerSelects(){
 
 function openModal(type){
   if ((type==='trainer'||type==='batch'||type==='assignment') && !requireHeadAccess()) return;
+  if(type==='batch'){buildDayChips();typeChanged();}
   document.getElementById('modal'+cap(type)).classList.add('on');
 }
 function closeModal(type){ document.getElementById('modal'+cap(type)).classList.remove('on'); }
@@ -334,22 +364,54 @@ async function saveTrainer(){
   await loadHeadView(); await loadStats();
 }
 
-async function toggleTrainer(id, status){
+async function deleteTrainer(id, name){
   if (!requireHeadAccess()) return;
-  const newStatus = status === 'active' ? 'inactive' : 'active';
-  await sb.from('trainers').update({ status: newStatus }).eq('id', id);
+  if (!confirm('Delete trainer "'+name+'" permanently? This cannot be undone.')) return;
+  const {error}=await sb.from('trainers').delete().eq('id', id);
+  if(error){alert('Cannot delete: this trainer still has batches or sessions linked. Reassign or delete those first.\n\n('+error.message+')');return;}
   await loadHeadView(); await loadStats();
 }
+function esc(s){return String(s??'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));}
 
+const COURSES={
+  'group-foundation':{label:'Group Foundation',hint:'32 group classes · 8 masterclasses · 2 one-on-ones over 2 months',fixed:true},
+  'group-upgrade':{label:'Group Upgrade',hint:'32 group classes · 8 masterclasses · 2 one-on-ones over 2 months',fixed:true},
+  'elite-oneonone':{label:'Elite 1:1',hint:'20 one-on-one sessions · ~1 month',sessions:20,locked:true},
+  'custom-elite':{label:'Customized Elite',hint:'Session count set per student requirement',sessions:20},
+  'ielts-group':{label:'IELTS Group',hint:'Set total sessions for this IELTS group batch',sessions:24},
+  'ielts-oneonone':{label:'IELTS 1:1',hint:'Set total one-on-one sessions',sessions:12},
+  'group':{label:'Group (legacy)'},'one-on-one':{label:'1:1 (legacy)'},'elite':{label:'Elite (legacy)'}
+};
+const courseLabel=t=>COURSES[t]?.label||t||'—';
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function buildDayChips(){
+  const box=document.getElementById('m_b_days');
+  if(box && !box.children.length) box.innerHTML=DAYS.map(d=>`<span class="dchip" data-d="${d}" onclick="this.classList.toggle('on')">${d}</span>`).join('');
+}
+function typeChanged(){
+  const t=document.getElementById('m_b_type').value, c=COURSES[t]||{};
+  document.getElementById('m_b_hint').textContent=c.hint||'';
+  const sess=document.getElementById('m_b_sessions');
+  if(c.fixed){sess.style.display='none';sess.value='';}
+  else{sess.style.display='block';sess.value=c.sessions||'';sess.disabled=!!c.locked;}
+}
 async function saveBatch(){
   if (!requireHeadAccess()) return;
   const name = document.getElementById('m_b_name').value.trim();
   const trainer_id = document.getElementById('m_b_trainer').value;
-  const day_pattern = document.getElementById('m_b_schedule').value.trim();
   const batch_type = document.getElementById('m_b_type').value;
-  if(!name) return;
-  await sb.from('batches').insert({ name, trainer_id, day_pattern, batch_type });
-  closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_schedule').value='';
+  const days=[...document.querySelectorAll('#m_b_days .dchip.on')].map(x=>x.dataset.d);
+  const mc=document.getElementById('m_b_mc').value;
+  const time_slot=document.getElementById('m_b_time').value.trim();
+  const sessEl=document.getElementById('m_b_sessions');
+  const sessions_total=(COURSES[batch_type]?.fixed)?null:(parseInt(sessEl.value)||COURSES[batch_type]?.sessions||null);
+  if(!name){alert('Batch needs a name.');return;}
+  if(!days.length){alert('Pick at least one class day.');return;}
+  const day_pattern=days.join(', ')+(mc?` · MC ${mc}`:'');
+  const {error}=await sb.from('batches').insert({ name, trainer_id, day_pattern, time_slot, batch_type, sessions_total });
+  if(error){alert('Save failed: '+error.message+'\n\nIf it mentions "batch_type" or "sessions_total" — run the one-time migration SQL (in the founder chat) in Supabase, then retry.');return;}
+  closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_time').value='';
+  document.querySelectorAll('#m_b_days .dchip.on').forEach(x=>x.classList.remove('on'));
   await loadHeadView(); await loadStats();
 }
 
@@ -427,6 +489,21 @@ function loadGoogleSheets(){
     error: () => document.getElementById('sheetBatches').innerHTML = '<div class="empty">Could not load sheet. Check sharing is set to "Anyone with link".</div>'
   });
 }
+
+/* single sign-on from Founder Command Center */
+(async function trySSO(){
+  try{
+    const raw=localStorage.getItem('be_session');if(!raw)return;
+    const s=JSON.parse(raw);
+    if(!s.u || Date.now()-(s.t||0) > 12*3600*1000) return;
+    const {data}=await sb.from('roles').select('*').eq('username',s.u).maybeSingle();
+    if(!data)return;
+    currentUser=data;
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    boot();
+  }catch(_){}
+})();
 </script>
 </body>
 </html>
