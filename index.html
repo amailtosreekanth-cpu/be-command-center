@@ -623,6 +623,16 @@ async function doLogin(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('login').style.display!=='none')doLogin();});
 function signOut(){try{localStorage.removeItem('be_session');}catch(_){}location.reload();}
+/* stay signed in: restore session on load (30-day sliding window) */
+(async function(){try{
+  const s=JSON.parse(localStorage.getItem('be_session')||'null');
+  if(!s||!s.u||Date.now()-(s.t||0)>2592e6)return;
+  const {data}=await acadDB.from('roles').select('*').eq('username',s.u).maybeSingle();
+  if(!data||data.role!=='founder')return;
+  founder=data;
+  try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
+  $('login').style.display='none';$('app').style.display='block';boot();
+}catch(_){}})();
 
 /* ═══════════ NAV ═══════════ */
 function go(p){
