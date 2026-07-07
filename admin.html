@@ -181,9 +181,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('login').style.dis
 async function trySSO(){
   try{
     const s=JSON.parse(localStorage.getItem('be_session')||'null');
-    if(!s||Date.now()-s.t>432e5)return;
+    if(!s||Date.now()-(s.t||0)>2592e6)return; /* 30 days */
     const {data}=await DB.from('roles').select('*').eq('username',s.u).maybeSingle();
-    if(data&&['founder','admin'].includes(data.role)){ME=data;enter();}
+    if(data&&['founder','admin'].includes(data.role)){ME=data;
+      try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
+      enter();}
   }catch(_){}
 }
 function signOut(){try{localStorage.removeItem('be_session');}catch(_){}ME=null;location.reload();}
