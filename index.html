@@ -213,6 +213,11 @@ body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body
   mask-image:radial-gradient(circle closest-side,#000 78%,transparent 99%)}
 .globe-zone::before{content:'';position:absolute;top:50%;left:50%;width:560px;height:560px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(77,159,255,.14),rgba(77,159,255,.05) 45%,transparent 68%);animation:halo 6.5s ease-in-out infinite;pointer-events:none;z-index:0}
 @keyframes halo{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
+#globeFloat{position:fixed;right:26px;bottom:34px;width:158px;height:158px;z-index:70;display:none;cursor:grab;border-radius:50%;touch-action:none;animation:fpop .5s cubic-bezier(.2,.95,.3,1.12)}
+#globeFloat:active{cursor:grabbing}
+#globeFloat #globeEl{position:absolute;top:50%;left:50%;margin:0}
+#globeFloat::after{content:'JARVIS · TAP OR SPEAK';position:absolute;left:50%;transform:translateX(-50%);bottom:-15px;font-family:Barlow,sans-serif;font-weight:700;font-size:8px;letter-spacing:.26em;color:var(--ghost);white-space:nowrap}
+@keyframes fpop{from{transform:scale(.4) translateY(40px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .globe-fallback{width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(77,159,255,.5),rgba(10,12,26,.9) 60%);box-shadow:0 0 90px rgba(77,159,255,.3),inset 0 0 60px rgba(0,0,0,.6)}
 .jarvis{display:flex;flex-direction:column;align-items:center;margin-top:-24px;z-index:2}
 .orb{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#ff7a94,#ed1f51 45%,#5c0d22 90%);box-shadow:0 0 30px rgba(237,31,81,.6),0 0 80px rgba(237,31,81,.22);animation:breathe 3.2s ease-in-out infinite}
@@ -313,7 +318,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
     <a class="sb-it" href="https://broken-english-assessment.onrender.com" target="_blank"><i class="ti ti-clipboard-check"></i>Assessment Tool</a>
     <a class="sb-it" href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank"><i class="ti ti-movie"></i>Production Suite</a>
     <div class="sb-sp"></div>
-    <a class="sb-it" href="admin.html" target="_blank"><i class="ti ti-settings"></i>Admin Panel</a>
+    <a class="sb-it" href="admin.html" target="_blank" id="adminLink" style="display:none"><i class="ti ti-settings"></i>Admin Panel</a>
     <div class="sb-user">
       <img src="photos/Sreekanth.jpg" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
       <div class="fb">SR</div>
@@ -626,11 +631,43 @@ function go(p){
   document.querySelectorAll('.sb-it').forEach(x=>x.classList.toggle('on',x.dataset.p===p));
   document.body.dataset.th=p;
   window.scrollTo({top:0});
+  dockGlobe(p);
+}
+/* ── floating globe: lives in hero on deck, ⅓-size draggable orb elsewhere ── */
+let _gFloat=false;
+const gTx=s=>(_gFloat?'translate(-50%,-50%) ':'')+`scale(${(+s).toFixed(4)})`;
+function dockGlobe(p){
+  const ge=$('globeEl');if(!ge)return;
+  let fl=$('globeFloat');
+  if(!fl){
+    fl=document.createElement('div');fl.id='globeFloat';document.body.appendChild(fl);
+    let drag=false,dx=0,dy=0;
+    fl.addEventListener('pointerdown',e=>{drag=true;const r=fl.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;fl.setPointerCapture(e.pointerId);});
+    fl.addEventListener('pointermove',e=>{if(!drag)return;
+      const x=Math.min(innerWidth-40,Math.max(-40,e.clientX-dx)),y=Math.min(innerHeight-40,Math.max(-40,e.clientY-dy));
+      fl.style.left=x+'px';fl.style.top=y+'px';fl.style.right='auto';fl.style.bottom='auto';});
+    fl.addEventListener('pointerup',()=>{drag=false;});
+  }
+  if(p==='deck'){
+    if(_gFloat){_gFloat=false;fl.style.display='none';
+      const z=document.querySelector('.globe-zone');z.insertBefore(ge,$('missionTag'));
+      ge.style.transform=gTx(1);
+      if(window._g){_g.controls().enableRotate=true;if(!RM)_g.pointOfView({lat:10.3,lng:76.4,altitude:1.55},1200);}}
+  }else{
+    if(!_gFloat){_gFloat=true;
+      fl.style.display='block';fl.style.animation='none';void fl.offsetWidth;fl.style.animation='';
+      fl.appendChild(ge);ge.style.transform=gTx(1/3);
+      if(window._g)_g.controls().enableRotate=false;}
+    if(window._g&&!RM){ /* travel: each command center pans the planet */
+      const L={sales:{lat:20,lng:78},media:{lat:26,lng:5},proj:{lat:42,lng:-40},acad:{lat:10.3,lng:76.4}};
+      const t=L[p]||{lat:20,lng:60};_g.pointOfView({lat:t.lat,lng:t.lng,altitude:2.2},1100);}
+  }
 }
 
 /* ═══════════ BOOT ═══════════ */
 function boot(){
   $('uName').textContent=founder.name;
+  if((founder.username||'').toLowerCase()==='sreekanth')$('adminLink').style.display='';
   /* per-founder DP: repo photos + optional site_config team.photos override */
   const PHOTOS={sreekanth:'photos/Sreekanth.jpg',hasnu:'photos/Hasnu.png',jazeel:'photos/Jazeel.png'};
   (function(){
@@ -1128,7 +1165,7 @@ function jarvisCmd(t){
   hit(/sales|lead/,          ()=>go('sales'),'SALES COMMAND OPEN')||
   hit(/media|video|content/, ()=>go('media'),'MEDIA COMMAND OPEN')||
   hit(/project/,             ()=>go('proj'),'PROJECTS COMMAND OPEN')||
-  hit(/deck|home|founder|dashboard|overview/,()=>go('deck'),'FOUNDER DECK')||
+  hit(/deck|home|founder|dashboard|overview|\bback\b|\breturn\b/,()=>go('deck'),'FOUNDER DECK')||
   hit(/portal/,              ()=>window.open('academics.html','_blank'),'OPENING ACADEMICS PORTAL')||
   hit(/admin|back ?office/,  ()=>window.open('admin.html','_blank'),'OPENING ADMIN PANEL')||
   hit(/sign ?out|log ?out/,  ()=>signOut(),'SIGNING OUT')||
@@ -1148,7 +1185,7 @@ async function toggleJarvis(){
   if(_jOn){_jOn=false;stopRec();cancelAnimationFrame(_jRaf);
     try{_jStream&&_jStream.getTracks().forEach(t=>t.stop());}catch(_){}
     try{_jCtx&&_jCtx.close();}catch(_){}_jCtx=null;_jStream=null;
-    const ge=$('globeEl');ge.style.transform='';ge.style.filter='';
+    const ge=$('globeEl');ge.style.transform=gTx(_gFloat?1/3:1);ge.style.filter='';
     if(window._g)_g.controls().autoRotateSpeed=.55;
     sub.textContent='Tap the globe · JARVIS listens';return;}
   try{
@@ -1162,7 +1199,7 @@ async function toggleJarvis(){
     const ge=$('globeEl');
     const loop=()=>{if(!_jOn)return;_jAn.getByteFrequencyData(_jBuf);
       const v=_jBuf.reduce((a,b)=>a+b,0)/_jBuf.length/255;
-      ge.style.transform=`scale(${(1+v*.18).toFixed(3)})`;
+      ge.style.transform=gTx((_gFloat?1/3:1)*(1+v*.18));
       ge.style.filter=`drop-shadow(0 0 ${(14+v*70).toFixed(0)}px rgba(237,31,81,${(.3+v*.5).toFixed(2)}))`;
       if(window._g)_g.controls().autoRotateSpeed=.55+v*8;
       _jRaf=requestAnimationFrame(loop);};
