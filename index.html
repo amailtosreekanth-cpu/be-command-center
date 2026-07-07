@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<link rel="icon" type="image/png" href="brand/logo-full.png"/>
 <title>BROKEN ENGLISH · COMMAND CENTER</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Barlow:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -90,7 +91,8 @@ h1,h2,h3{font-family:Montserrat,sans-serif}
 .page[data-th="sales"]{--thr:0,224,138}
 .page[data-th="media"]{--thr:255,138,42}
 .page[data-th="proj"]{--thr:138,99,255}
-body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body[data-th="media"]{--thr:255,138,42}body[data-th="proj"]{--thr:138,99,255}
+.page[data-th="acad"]{--thr:45,212,191}
+body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body[data-th="media"]{--thr:255,138,42}body[data-th="proj"]{--thr:138,99,255}body[data-th="acad"]{--thr:45,212,191}
 
 /* ══ KPI STRIP ══ */
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}
@@ -206,7 +208,11 @@ body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body
 .hcard{border:1px solid rgba(var(--thr),.2);border-radius:14px;padding:14px 16px;background:rgba(5,6,10,.75);backdrop-filter:blur(10px)}
 .hcard .eb{margin-bottom:8px}
 .globe-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:380px}
-#globeEl{width:460px;height:460px;margin:-40px 0;position:relative;z-index:1}
+#globeEl{width:460px;height:460px;margin:-40px 0;position:relative;z-index:1;cursor:pointer;
+  -webkit-mask-image:radial-gradient(circle closest-side,#000 78%,transparent 99%);
+  mask-image:radial-gradient(circle closest-side,#000 78%,transparent 99%)}
+.globe-zone::before{content:'';position:absolute;top:50%;left:50%;width:560px;height:560px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(77,159,255,.14),rgba(77,159,255,.05) 45%,transparent 68%);animation:halo 6.5s ease-in-out infinite;pointer-events:none;z-index:0}
+@keyframes halo{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
 .globe-fallback{width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(77,159,255,.5),rgba(10,12,26,.9) 60%);box-shadow:0 0 90px rgba(77,159,255,.3),inset 0 0 60px rgba(0,0,0,.6)}
 .jarvis{display:flex;flex-direction:column;align-items:center;margin-top:-24px;z-index:2}
 .orb{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#ff7a94,#ed1f51 45%,#5c0d22 90%);box-shadow:0 0 30px rgba(237,31,81,.6),0 0 80px rgba(237,31,81,.22);animation:breathe 3.2s ease-in-out infinite}
@@ -298,7 +304,8 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
     <div class="sb-sec eb">Mission Control</div>
     <a class="sb-it on" data-p="deck" onclick="go('deck')"><i class="ti ti-layout-dashboard"></i>Founder Deck</a>
     <div class="sb-sec eb">Operations</div>
-    <a class="sb-it" href="academics.html" target="_blank"><i class="ti ti-school"></i>Academics Portal</a>
+    <a class="sb-it" data-p="acad" onclick="go('acad')"><i class="ti ti-school"></i>Academics Command</a>
+    <a class="sb-it" href="academics.html" target="_blank"><i class="ti ti-external-link"></i>Academics Portal</a>
     <a class="sb-it" data-p="sales" onclick="go('sales')"><i class="ti ti-trending-up"></i>Sales Command</a>
     <a class="sb-it" data-p="media" onclick="go('media')"><i class="ti ti-video"></i>Media Command</a>
     <a class="sb-it" data-p="proj" onclick="go('proj')"><i class="ti ti-box"></i>Projects Command</a>
@@ -306,6 +313,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
     <a class="sb-it" href="https://broken-english-assessment.onrender.com" target="_blank"><i class="ti ti-clipboard-check"></i>Assessment Tool</a>
     <a class="sb-it" href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank"><i class="ti ti-movie"></i>Production Suite</a>
     <div class="sb-sp"></div>
+    <a class="sb-it" href="admin.html" target="_blank"><i class="ti ti-settings"></i>Admin Panel</a>
     <div class="sb-user">
       <img src="photos/Sreekanth.jpg" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
       <div class="fb">SR</div>
@@ -341,7 +349,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
         <div class="globe-zone">
           <div id="globeEl"></div>
           <div id="missionTag">Mission Acquired</div>
-          <div class="jarvis"><div class="orb" id="orbBtn" onclick="toggleJarvis()" title="Tap — JARVIS listens to your mic"></div><div class="jt">JARVIS</div><div class="js" id="jsSub">Tap the orb · JARVIS listens</div></div>
+          <div class="jarvis"><div class="jt">JARVIS</div><div class="js" id="jsSub">Tap the globe · JARVIS listens</div></div>
         </div>
         <div class="hcol">
           <div class="hcard">
@@ -376,6 +384,32 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
     </section>
 
     <!-- ═══ PAGE: SALES ═══ -->
+    <section class="page" id="pg-acad" data-th="acad">
+      <div class="tb">
+        <div class="tb-ic"><i class="ti ti-school"></i></div>
+        <div><h1>ACADEMICS COMMAND CENTER</h1><div class="sub">Batches, trainers and student journeys — live from the roster</div></div>
+        <div class="tb-r"><div class="pill"><span class="dot"></span>All Systems Operational</div><div class="clock" id="clock5">—</div></div>
+      </div>
+      <div class="kpis" id="acadKpis"></div>
+      <div class="gr">
+        <div class="pn s12"><div class="ph"><h2>Batch Progress</h2><span class="tg" id="acadBatchTag">Paced estimates</span></div><div id="acadBatches" class="empty">Loading…</div></div>
+      </div>
+      <div class="gr">
+        <div class="pn s5"><div class="ph"><h2>Trainer Load</h2><span class="tg">Active students</span></div><div id="acadLoad" class="empty">Loading…</div></div>
+        <div class="pn s4"><div class="ph"><h2>Programme Mix</h2></div><div id="acadMix" class="empty">Loading…</div></div>
+        <div class="pn s3"><div class="ph"><h2>Trainer Task Feed</h2></div><div id="acadTasks" class="empty">Loading…</div></div>
+      </div>
+      <div class="gr">
+        <div class="pn s12"><div class="ph"><h2>Management Actions</h2><span class="tg">Portal</span></div>
+          <div class="note">Create batches, assign tasks, log sessions and manage trainers in the <b>Academics Portal</b> — this page is the founder's read-out.</div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <a class="lch solid" href="academics.html" target="_blank"><i class="ti ti-school"></i>Academics Portal</a>
+            <a class="lch" href="admin.html" target="_blank"><i class="ti ti-settings"></i>Admin Panel</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="page" id="pg-sales" data-th="sales">
       <div class="tb">
         <div class="tb-ic"><i class="ti ti-trending-up"></i></div>
@@ -495,7 +529,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const fmt=n=>Number(n||0).toLocaleString('en-IN');
 const rgba=(hex,a)=>{const h=hex.replace('#','');return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`};
-const TH={deck:'#4d9fff',sales:'#00e08a',media:'#ff8a2a',proj:'#8a63ff'};
+const TH={deck:'#4d9fff',sales:'#00e08a',media:'#ff8a2a',proj:'#8a63ff',acad:'#2dd4bf'};
 const AVC=['#00e08a','#4d9fff','#ff8a2a','#8a63ff','#ed1f51','#ffc24b'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
@@ -615,7 +649,7 @@ function boot(){
 function tick(){
   const n=new Date();
   const t=n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true})+'<br>'+n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
-  ['clock1','clock2','clock3','clock4'].forEach(id=>{const e=$(id);if(e)e.innerHTML=t;});
+  ['clock1','clock2','clock3','clock4','clock5'].forEach(id=>{const e=$(id);if(e)e.innerHTML=t;});
 }
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NETRED=[{lat:25.2,lng:55.3},{lat:25.3,lng:51.5},{lat:24.7,lng:46.7},{lat:29.4,lng:48},{lat:23.6,lng:58.4},{lat:12.97,lng:77.59},{lat:19.07,lng:72.88}];
@@ -652,6 +686,14 @@ function initGlobe(){
     setTimeout(()=>g.pointOfView({lat:10.3,lng:76.4,altitude:1.55},2000),4600);
     setTimeout(()=>{$('missionTag').style.opacity=1;},6300);
     setTimeout(()=>{$('missionTag').style.opacity=0;g.controls().autoRotateSpeed=.55;},8200);
+    /* idle life: random network-city ping every 5s */
+    if(!RM){const ALL=[...NETRED.map(p=>({...p,c:'#ed1f51'})),...NETBLUE.map(p=>({...p,c:'#4d9fff'}))];
+      let base=[{...HQ,c:'#ed1f51'},{...ED,c:'#00e08a'}];
+      setInterval(()=>{if(document.hidden||!window._g)return;
+        const p=ALL[Math.floor(Math.random()*ALL.length)];
+        _g.ringsData([...base,{lat:p.lat,lng:p.lng,c:p.c}]);
+        setTimeout(()=>{if(window._g)_g.ringsData(base);},2900);
+      },5200);}
   }catch(e){$('globeEl').innerHTML='<div class="globe-fallback"></div>';}
 }
 
@@ -780,17 +822,70 @@ function renderDeck(){
     <div class="cstats">${stats.map(s=>`<div class="cs"><div class="cv" style="color:${s[2]||'inherit'}">${s[1]}</div><div class="cl">${s[0]}</div></div>`).join('')}</div>
     <div class="go" style="color:${color};border-color:${rgba(color,.35)}">Enter Command Center <i class="ti ti-arrow-right"></i></div></div>`;
   $('cmdRow').innerHTML=
-    card('aca','#4d9fff','ti-school','ACADEMICS',[['Batches',M?M.batches.filter(b=>b.active>0).length:'—'],['Trainers',D?D.trainers.length:'—'],['Active',M?M.stat.active||0:'—','#4d9fff']],null,'academics.html')+
+    card('aca','#4d9fff','ti-school','ACADEMICS',[['Batches',M?M.batches.filter(b=>b.active>0).length:'—'],['Trainers',D?D.trainers.length:'—'],['Active',M?M.stat.active||0:'—','#4d9fff']],'acad')+
     card('sal','#00e08a','ti-trending-up','SALES',[['Leads',A?fmt(A.total):'—'],['This Week',A?A.week:'—'],['Enrolled',M?fmt(M.total):'—','#00e08a']],'sales')+
     card('med','#ff8a2a','ti-video','MEDIA',[['Queued',V?V.cols.queue.length:'—'],['In Edit',V?V.cols.prog.length:'—'],['Review',V?V.cols.review.length:'—','#ff8a2a']],'media')+
     card('prj','#8a63ff','ti-box','PROJECTS',S.proj?[['Active',S.proj.length],['Open',S.proj.reduce((a,p)=>a+Math.max(0,(p.tasks_total||0)-(p.tasks_done||0)),0)],['Avg %',S.proj.length?Math.round(S.proj.reduce((a,p)=>a+(p.progress||0),0)/S.proj.length):0,'#8a63ff']]:[['Setup','—'],['1 SQL','—'],['paste','—']],'proj');
   /* health */
   const names={master:'Master Roster',assess:'Assessments',acad:'Academics DB',media:'Media DB',proj:'Projects DB'};
   $('healthBox').innerHTML=Object.entries(names).map(([k,n])=>`<div class="li"><span class="light ${src[k]==='ok'?'g':src[k]==='fail'?'r':'p'}" style="width:8px;height:8px;border-radius:50%"></span><span class="t" style="font-weight:500;color:var(--steel)">${n}</span><span class="m" style="color:${src[k]==='ok'?'var(--ok)':'var(--warn)'}">${src[k]==='ok'?'Operational':'Down'}</span></div>`).join('');
-  renderSales();
+  renderSales();renderAcad();
   wireKpis('deckKpis',[()=>kd('total'),()=>kd('active'),()=>kd('new'),()=>kd('trainers'),()=>kd('completion'),()=>kd('revenue')]);dockify($('deckKpis'));
   armRings($('pg-deck'));
 }
+
+/* ═══════════ RENDER: ACADEMICS ═══════════ */
+function pace(b){ /* §8 time-based course math — Paced estimate, not log-confirmed */
+  if(!b.start)return null;
+  const weeks=Math.max(0,(Date.now()-b.start)/6048e5);
+  if(b.prog==='Elite'||b.prog==='IELTS 1:1'){const done=Math.min(20,Math.floor(weeks*5));return{done,total:20,parts:`${done}/20 one-on-ones`};}
+  const g=Math.min(32,Math.floor(weeks*4)),mc=Math.min(8,Math.floor(weeks));
+  const pctT=(g+mc)/40,oo=pctT>.75?2:pctT>.05?1:0;
+  return{done:g+mc+oo,total:42,parts:`G ${g}/32 · MC ${mc}/8 · 1:1 ${oo}/2`};
+}
+function renderAcad(){
+  const M=S.master,D=S.acad,c=TH.acad;
+  if(!M){$('acadKpis').innerHTML=kpiTile('Master Roster','OFFLINE','fix sharing → anyone with link','wn',c);
+    ['acadBatches','acadLoad','acadMix','acadTasks'].forEach(id=>$(id).innerHTML='<div class="note"><b>Master roster offline.</b> Share → Anyone with link → Viewer, then refresh.</div>');return;}
+  const act=M.batches.filter(b=>b.active>0).sort((a,b)=>(a.end||9e15)-(b.end||9e15));
+  const growth=M.newLM?Math.round((M.newTM-M.newLM)/M.newLM*100):null;
+  $('acadKpis').innerHTML=
+    kpiTile('Active Batches',fmt(act.length),`${M.batches.length} lifetime`, '',c)+
+    kpiTile('Active Students',fmt(M.stat.active||0),M.stat.frozen?`${M.stat.frozen} on freeze`:'all running',M.stat.frozen?'wn':'up',c)+
+    kpiTile('Trainers',D?fmt(D.trainers.length):'—',D?'on roster':'DB offline',D?'':'wn',c)+
+    kpiTile('Open Tasks',D?fmt(D.pending):'—',D?'assigned via portal':'DB offline',D?'':'wn',c)+
+    kpiTile('New This Month',fmt(M.newTM),growth!==null?(growth>=0?`↑ ${growth}% vs last month`:`↓ ${Math.abs(growth)}% vs last month`):'',growth>=0?'up':'dn',c,M.mvals)+
+    kpiTile('Completion Rate',(M.total?Math.round((M.stat.complete||0)/M.total*100):0)+'%',`${M.stat.complete||0} completed`,'up',c);
+  wireKpis('acadKpis',[null,()=>kd('active'),()=>kd('trainers'),()=>kd('trainers'),()=>kd('new'),()=>kd('completion')]);dockify($('acadKpis'));
+  S.ui.acadB=act;
+  $('acadBatches').innerHTML=act.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">`+act.map((b,i)=>{
+    const p=pace(b),pct=p?Math.round(p.done/p.total*100):null;
+    return `<div class="hcard clk" style="cursor:pointer;border-color:${rgba(c,.25)}" onclick="openBatchA(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div><div style="font-weight:700;font-family:Montserrat,sans-serif;font-size:13px">${esc(b.name)}</div>
+        <div style="font-size:10.5px;color:var(--steel);margin-top:3px">${esc(b.trainer)} · ${esc(b.prog)}</div>
+        <div style="font-size:10px;color:var(--ghost);margin-top:6px">${b.active} active${b.end?' · ends '+b.end.toLocaleDateString('en-IN',{day:'numeric',month:'short'}):''}</div>
+        ${p?`<div style="font-size:9.5px;color:var(--ghost);margin-top:4px">${p.parts}</div>`:''}</div>
+        ${pct!==null?`<div style="text-align:center">${ring(pct/100,c)}<div class="eb" style="margin-top:3px">${pct}%</div></div>`:'<div class="eb">no dates</div>'}
+      </div>
+      <div class="eb" style="margin-top:8px;color:${pct!==null?'var(--ghost)':'var(--warn)'}">${pct!==null?'Paced estimate':'dates missing in sheet'}</div>
+    </div>`;}).join('')+'</div>':'<div class="empty">No active batches in the roster.</div>';
+  /* trainer load bars */
+  const tl={};M.students.forEach(st=>{if(st.status==='active'&&st.trainer!=='—')tl[st.trainer]=(tl[st.trainer]||0)+1;});
+  const tls=Object.entries(tl).sort((a,b)=>b[1]-a[1]);const mx=tls[0]?.[1]||1;
+  $('acadLoad').innerHTML=tls.map(([n,v],i)=>`<div class="li"><span class="av" style="background:${AVC[i%AVC.length]}">${initials(n)}</span><span class="t" style="min-width:90px">${esc(n)}</span><div style="flex:1;height:8px;background:rgba(255,255,255,.05);border-radius:4px"><div class="bfill" data-w="${Math.round(v/mx*100)}"></div></div><span class="m">${v}</span></div>`).join('')||'<div class="empty">—</div>';
+  /* programme mix donut */
+  const segs=Object.entries(M.prog).filter(([,v])=>v>0).map(([k,v],i)=>({label:k,v,c:AVC[i%AVC.length]}));
+  $('acadMix').innerHTML=segs.length?`<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">${donut(segs)}<div>${segs.map(sg=>`<div class="li" style="padding:3px 0"><span style="width:9px;height:9px;border-radius:3px;background:${sg.c};display:inline-block"></span><span class="t">${esc(sg.label)}</span><span class="m">${sg.v}</span></div>`).join('')}</div></div>`:'<div class="empty">—</div>';
+  /* task feed */
+  $('acadTasks').innerHTML=D?(D.assigns.slice(0,8).map(a=>`<div class="li"><i class="ti ti-${a.status==='done'?'circle-check':'clock'} ck" style="color:${a.status==='done'?'var(--ok)':'var(--warn)'}"></i><span class="t">${esc(a.task)}</span><span class="m">${esc(a.trainers?.name||'')}</span></div>`).join('')||'<div class="empty">No tasks yet — assign in the portal.</div>'):'<div class="note"><b>Academics DB offline.</b></div>';
+  armRings($('pg-acad'));
+}
+function openBatchA(i){const b=S.ui.acadB[i],p=pace(b);
+  openSheet('Batch',b.name,(b.trainer||'')+' · '+(b.prog||''),
+    cells([['Students',b.students.length],['Active',b.active],['Programme',b.prog],['Progress',p?Math.round(p.done/p.total*100)+'% · paced estimate':'—']])+
+    (p?`<div class="empty" style="padding:4px 0 10px">${p.parts} — time-paced estimate; real per-session logs land with the batch-tracker parse.</div>`:'')+
+    b.students.map(stuRow).join(''));}
 
 /* ═══════════ RENDER: SALES ═══════════ */
 function renderSales(){
@@ -1023,29 +1118,62 @@ function dockify(box){if(!box||box.dataset.dock||RM)return;box.dataset.dock=1;
   box.addEventListener('mousemove',e=>{[...box.children].forEach(k=>{const r=k.getBoundingClientRect();const d=Math.abs(e.clientX-(r.left+r.width/2));const s=Math.max(0,1-d/300);k.style.transform=`translateY(${(-9*s).toFixed(1)}px) scale(${(1+.06*s).toFixed(3)})`;k.style.zIndex=Math.round(20*s);});});
   box.addEventListener('mouseleave',()=>[...box.children].forEach(k=>{k.style.transform='';k.style.zIndex='';}));}
 
-/* ── JARVIS mic-reactive globe ── */
-let _jOn=false,_jCtx,_jAn,_jBuf,_jRaf;
+/* ── JARVIS: tap the globe → mic viz + voice commands ── */
+let _jOn=false,_jCtx,_jAn,_jBuf,_jRaf,_jStream,_rec;
+const J_HINT='LIVE — say “open sales”, “open media”, “open academics”…';
+function jarvisSay(m){const s=$('jsSub');s.textContent=m;clearTimeout(s._h);s._h=setTimeout(()=>{s.textContent=_jOn?J_HINT:'Tap the globe · JARVIS listens';},2600);}
+function jarvisCmd(t){
+  const hit=(re,fn,m)=>re.test(t)?(fn(),jarvisSay(m),true):false;
+  hit(/academic|batch|class/, ()=>go('acad'),'ACADEMICS COMMAND OPEN')||
+  hit(/sales|lead/,          ()=>go('sales'),'SALES COMMAND OPEN')||
+  hit(/media|video|content/, ()=>go('media'),'MEDIA COMMAND OPEN')||
+  hit(/project/,             ()=>go('proj'),'PROJECTS COMMAND OPEN')||
+  hit(/deck|home|founder|dashboard|overview/,()=>go('deck'),'FOUNDER DECK')||
+  hit(/portal/,              ()=>window.open('academics.html','_blank'),'OPENING ACADEMICS PORTAL')||
+  hit(/admin|back ?office/,  ()=>window.open('admin.html','_blank'),'OPENING ADMIN PANEL')||
+  hit(/sign ?out|log ?out/,  ()=>signOut(),'SIGNING OUT')||
+  jarvisSay('“'+t.slice(0,40)+'” — try “open sales”');
+}
+function startRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){jarvisSay('Voice viz only — this browser has no speech API (use Chrome)');return;}
+  _rec=new SR();_rec.continuous=true;_rec.interimResults=false;_rec.lang='en-IN';
+  _rec.onresult=e=>{const t=e.results[e.results.length-1][0].transcript.trim().toLowerCase();if(t)jarvisCmd(t);};
+  _rec.onend=()=>{if(_jOn&&_rec)try{_rec.start();}catch(_){}};
+  try{_rec.start();}catch(_){}
+}
+function stopRec(){if(_rec){const r=_rec;_rec=null;try{r.onend=null;r.stop();}catch(_){}}}
 async function toggleJarvis(){
-  const orb=$('orbBtn'),sub=$('jsSub');
-  if(_jOn){_jOn=false;cancelAnimationFrame(_jRaf);try{_jCtx&&_jCtx.close();}catch(_){}_jCtx=null;
-    $('globeEl').style.transform='';orb.style.boxShadow='';if(window._g)_g.controls().autoRotateSpeed=.55;
-    sub.textContent='Tap the orb · JARVIS listens';return;}
+  const sub=$('jsSub');
+  if(_jOn){_jOn=false;stopRec();cancelAnimationFrame(_jRaf);
+    try{_jStream&&_jStream.getTracks().forEach(t=>t.stop());}catch(_){}
+    try{_jCtx&&_jCtx.close();}catch(_){}_jCtx=null;_jStream=null;
+    const ge=$('globeEl');ge.style.transform='';ge.style.filter='';
+    if(window._g)_g.controls().autoRotateSpeed=.55;
+    sub.textContent='Tap the globe · JARVIS listens';return;}
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _jStream=await navigator.mediaDevices.getUserMedia({audio:true});
     _jCtx=new (window.AudioContext||window.webkitAudioContext)();
-    const srcN=_jCtx.createMediaStreamSource(stream);
+    const srcN=_jCtx.createMediaStreamSource(_jStream);
     _jAn=_jCtx.createAnalyser();_jAn.fftSize=256;srcN.connect(_jAn);
     _jBuf=new Uint8Array(_jAn.frequencyBinCount);_jOn=true;
-    sub.textContent='LIVE — JARVIS is listening';
+    sub.textContent=J_HINT;
+    startRec();
+    const ge=$('globeEl');
     const loop=()=>{if(!_jOn)return;_jAn.getByteFrequencyData(_jBuf);
       const v=_jBuf.reduce((a,b)=>a+b,0)/_jBuf.length/255;
-      $('globeEl').style.transform=`scale(${(1+v*.22).toFixed(3)})`;
+      ge.style.transform=`scale(${(1+v*.18).toFixed(3)})`;
+      ge.style.filter=`drop-shadow(0 0 ${(14+v*70).toFixed(0)}px rgba(237,31,81,${(.3+v*.5).toFixed(2)}))`;
       if(window._g)_g.controls().autoRotateSpeed=.55+v*8;
-      orb.style.boxShadow=`0 0 ${30+v*80}px rgba(237,31,81,${(.6+v*.4).toFixed(2)}),0 0 ${80+v*180}px rgba(237,31,81,.28)`;
       _jRaf=requestAnimationFrame(loop);};
     loop();
   }catch(e){sub.textContent='Mic blocked — allow it in the browser bar';}
 }
+/* globe tap = toggle (drag to rotate still works: <8px move counts as tap) */
+(function(){const gz=$('globeEl');if(!gz)return;let sx=0,sy=0;
+  gz.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;},true);
+  gz.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-sx,e.clientY-sy)<8)toggleJarvis();},true);
+})();
 </script>
 </body>
 </html>
