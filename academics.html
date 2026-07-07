@@ -496,10 +496,11 @@ function loadGoogleSheets(){
   try{
     const raw=localStorage.getItem('be_session');if(!raw)return;
     const s=JSON.parse(raw);
-    if(!s.u || Date.now()-(s.t||0) > 12*3600*1000) return;
+    if(!s.u || Date.now()-(s.t||0) > 2592e6) return; /* 30 days */
     const {data}=await sb.from('roles').select('*').eq('username',s.u).maybeSingle();
     if(!data)return;
     currentUser=data;
+    try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='block';
     boot();
