@@ -140,7 +140,11 @@ const DEFAULTS={
   links:[{label:'Assessment Tool',url:'https://broken-english-assessment.onrender.com'},{label:'Production Suite',url:'https://mediabrkn01-crypto.github.io/Production-Suite/'}],
   deptCards:{academics:true,sales:true,media:true,projects:true}},
  'sales.keywords':{contacted:['contact','call'],interested:['interest'],demo:['demo','assess'],
-  counsellors:['Ashika','Alisha','Hiba','Sumayya','Diya']}
+  counsellors:['Ashika','Alisha','Hiba','Sumayya','Diya']},
+ 'team.departments':[
+  {name:'Academics',color:'#4d9fff'},{name:'Sales',color:'#00e08a'},
+  {name:'Media',color:'#ff8a2a'},{name:'Projects',color:'#8a63ff'}],
+ 'sources.extra':[]
 };
 
 const SETUP_SQL=`-- Run in Supabase SQL editor · project baazubvfsrpmbfmrzumw (check URL bar!)
@@ -151,6 +155,10 @@ create table if not exists site_config(
 alter table site_config enable row level security;
 drop policy if exists "allow all site_config" on site_config;
 create policy "allow all site_config" on site_config for all using (true) with check (true);
+
+-- roles table has a CHECK constraint that rejects new role values ('admin').
+-- Drop it first (same pattern as the batches migration):
+alter table roles drop constraint if exists roles_role_check;
 
 -- Seed the admin login (change the password right after first sign-in):
 insert into roles (name, role, username, password)
@@ -264,6 +272,19 @@ function rTeam(){
     <div class="hint" style="margin-top:10px">Photos: upload the image to the repo's <b>photos/</b> folder (filenames are case-sensitive on GitHub Pages), then put the path here, e.g. <b>photos/Hasnu.png</b>. The founder deck reads <b>team.photos</b> ${badge('team.photos')}.</div>
   </div>
   <div class="panel sect">
+    <div class="eb">Departments ${badge('team.departments')}</div>
+    <table class="list"><thead><tr><th>Name</th><th>Color</th><th></th></tr></thead>
+    <tbody id="deptBody">${(CFG['team.departments']||[]).map(d=>`<tr>
+      <td><input data-f="name" value="${esc(d.name)}" style="min-width:150px"/></td>
+      <td><input type="color" data-f="color" value="${esc(d.color||'#4d9fff')}"/></td>
+      <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`).join('')}</tbody></table>
+    <div class="row" style="margin-top:12px">
+      <button class="btn2" onclick="addDept()"><i class="ti ti-plus"></i> Add department (HR, Customer Service…)</button>
+      <button class="btn" onclick="saveDepts()"><i class="ti ti-device-floppy"></i> Save departments</button>
+    </div>
+    <div class="hint" style="margin-top:10px">New departments become sections on the founder deck in the wiring pass — attach their sheets in Data Sources → More sheets, assign people above.</div>
+  </div>
+  <div class="panel sect">
     <div class="eb">Trainers roster</div>
     <div class="hint">Trainer add / delete / batch assignment lives in the <a href="academics.html" target="_blank" style="color:#ed6d8d">Academics Portal</a> (admin view) — it already has the guarded CRUD. Logins for trainers are managed in the table above.</div>
   </div>`;
@@ -366,9 +387,54 @@ function rSources(){
     <div class="hint" style="margin-top:10px">Test = fetches the sheet's gviz CSV (first tab). Sheet must be shared "anyone with link". Green = readable right now.</div>
   </div>
   <div class="panel sect">
+    <div class="eb">More sheets · leads, follow-ups, revenue, anything ${badge('sources.extra')}</div>
+    <table class="list"><thead><tr><th></th><th>Label</th><th>Sheet ID (or full URL)</th><th>Department</th><th></th></tr></thead>
+    <tbody id="extraBody">${(CFG['sources.extra']||[]).map((x,i)=>extraRow(x,i)).join('')}</tbody></table>
+    <div class="row" style="margin-top:12px">
+      <button class="btn2" onclick="addExtra()"><i class="ti ti-plus"></i> Add sheet</button>
+      <button class="btn" onclick="saveExtra()"><i class="ti ti-device-floppy"></i> Save sheets</button>
+    </div>
+    <div class="hint" style="margin-top:10px">Must be Google <b>Sheets</b> (not Docs) shared "anyone with link". Sales team's incoming-leads + follow-up trackers go here under Sales — they surface on the founder deck in the wiring pass. Paste a full URL and the ID is extracted on save.</div>
+  </div>
+  <div class="panel sect">
     <div class="eb">Supabase backends (read-only here)</div>
     <div class="hint">Academics/auth: <b>baazubvfsrpmbfmrzumw</b> · Media: <b>fevqnpllmarhoqdzpatq</b>. Changing these means editing the constants in index/academics/admin — deliberately not editable from a public page.</div>
   </div>`;
+}
+function addDept(){$('deptBody').insertAdjacentHTML('beforeend',`<tr>
+  <td><input data-f="name" placeholder="e.g. HR" style="min-width:150px"/></td>
+  <td><input type="color" data-f="color" value="#ffc24b"/></td>
+  <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`);}
+function saveDepts(){
+  const rows=[...$('deptBody').children].map(tr=>({name:tr.querySelector('[data-f=name]').value.trim(),color:tr.querySelector('[data-f=color]').value})).filter(d=>d.name);
+  if(!rows.length)return toast('Need at least one department.',true);
+  saveCfg('team.departments',rows);
+}
+function extraRow(x,i){
+  const depts=(CFG['team.departments']||[]).map(d=>d.name);
+  return `<tr>
+   <td><span class="src-light" id="xli_${i}"></span></td>
+   <td><input data-f="label" value="${esc(x.label||'')}" placeholder="Incoming leads" style="min-width:130px"/></td>
+   <td><div class="row"><input data-f="sheet" value="${esc(x.sheet||'')}" placeholder="1AbC… or URL" style="min-width:220px"/>
+     <button class="btn2" onclick="testExtra(this,${i})">Test</button></div></td>
+   <td><select data-f="dept">${depts.map(d=>`<option ${d===(x.dept||'')?'selected':''}>${esc(d)}</option>`).join('')}</select></td>
+   <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`;
+}
+function addExtra(){$('extraBody').insertAdjacentHTML('beforeend',extraRow({},Date.now()));}
+function sheetIdOf(v){const m=String(v).match(/\/d\/([a-zA-Z0-9_-]{20,})/);return m?m[1]:String(v).trim();}
+async function testExtra(btn,i){
+  const tr=btn.closest('tr'),id=sheetIdOf(tr.querySelector('[data-f=sheet]').value),li=tr.querySelector('.src-light');
+  li.className='src-light';
+  try{const r=await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`);const t=await r.text();
+    const ok=r.ok&&t.split('\n').length>1;li.className='src-light '+(ok?'ok':'fail');
+    toast(ok?`Readable · ${t.split('\n').length} rows.`:'Fetch failed — check ID & sharing.',!ok);
+  }catch(_){li.className='src-light fail';toast('Fetch failed — check ID & sharing.',true);}
+}
+function saveExtra(){
+  const rows=[...$('extraBody').children].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
+    return {label:g('label').value.trim(),sheet:sheetIdOf(g('sheet').value),dept:g('dept').value};})
+    .filter(x=>x.label&&x.sheet);
+  saveCfg('sources.extra',rows);
 }
 async function testSheet(k){
   const id=$('src_'+k).value.trim(),li=$('li_'+k);li.className='src-light';
