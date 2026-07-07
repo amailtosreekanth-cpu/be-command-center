@@ -4,6 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <link rel="icon" type="image/png" href="brand/logo-full.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#050408"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="BE Command"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
 <title>BROKEN ENGLISH · COMMAND CENTER</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Barlow:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -226,6 +232,25 @@ body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body
 .jarvis .js{font-size:9.5px;color:var(--ghost);letter-spacing:.1em;text-transform:uppercase;font-family:Barlow,sans-serif}
 .cmdrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
 @media(max-width:1100px){.cmdrow{grid-template-columns:repeat(2,1fr)}}
+/* ── mobile ── */
+#navBtn{display:none;position:fixed;top:12px;left:12px;z-index:130;width:42px;height:42px;border-radius:12px;background:rgba(10,12,16,.92);border:1px solid rgba(255,255,255,.14);color:var(--bone);font-size:20px;align-items:center;justify-content:center;backdrop-filter:blur(10px);cursor:pointer}
+#navBk{display:none;position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.55);backdrop-filter:blur(6px)}
+@media(max-width:900px){
+  #navBtn{display:flex}
+  body.nav-open #navBk{display:block}
+  .sb{position:fixed;left:0;top:0;z-index:120;height:100dvh;width:min(280px,84vw);transform:translateX(-108%);transition:transform .35s cubic-bezier(.2,.95,.3,1);box-shadow:24px 0 70px rgba(0,0,0,.65)}
+  body.nav-open .sb{transform:translateX(0)}
+  .main{padding:0 13px 90px}
+  .tb{flex-wrap:wrap;gap:10px;padding:14px 0 12px;margin-left:48px}
+  .tb h1{font-size:16px}.tb .sub{font-size:10px}
+  .tb-r{margin-left:auto}.clock{display:none}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .cmdrow{grid-template-columns:1fr}
+  .hero{padding:14px;gap:10px}
+  .globe-zone{min-height:0}
+  #globeFloat{width:112px;height:112px;right:12px;bottom:86px}
+  .sheet,#sheetBody{max-width:94vw}
+}
 .cmdc{border-radius:15px;padding:15px 16px;cursor:pointer;border:1px solid;transition:transform .18s;background:rgba(0,0,0,.25)}
 .cmdc:hover{transform:translateY(-4px)}
 .cmdc .ct{font-family:Montserrat,sans-serif;font-weight:800;font-size:13px;letter-spacing:.04em;display:flex;align-items:center;gap:9px;margin-bottom:11px}
@@ -299,7 +324,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
 </div>
 
 <!-- ══ APP ══ -->
-<div id="app"><div class="shell">
+<div id="app"><button id="navBtn" onclick="document.body.classList.toggle('nav-open')" aria-label="Menu"><i class="ti ti-menu-2"></i></button><div id="navBk" onclick="document.body.classList.remove('nav-open')"></div><div class="shell">
 
   <!-- SIDEBAR -->
   <nav class="sb">
@@ -640,11 +665,12 @@ function go(p){
   $('pg-'+p).classList.add('on');
   document.querySelectorAll('.sb-it').forEach(x=>x.classList.toggle('on',x.dataset.p===p));
   document.body.dataset.th=p;
+  document.body.classList.remove('nav-open');
   window.scrollTo({top:0});
   dockGlobe(p);
 }
 /* ── floating globe: lives in hero on deck, ⅓-size draggable orb elsewhere ── */
-let _gFloat=false;
+let _gFloat=false,_GS=460,_fScale=1/3;
 const gTx=s=>(_gFloat?'translate(-50%,-50%) ':'')+`scale(${(+s).toFixed(4)})`;
 function dockGlobe(p){
   const ge=$('globeEl');if(!ge)return;
@@ -666,7 +692,7 @@ function dockGlobe(p){
   }else{
     if(!_gFloat){_gFloat=true;
       fl.style.display='block';fl.style.animation='none';void fl.offsetWidth;fl.style.animation='';
-      fl.appendChild(ge);ge.style.transform=gTx(1/3);
+      _fScale=Math.max(.18,((fl.clientWidth||158)-4)/_GS);fl.appendChild(ge);ge.style.transform=gTx(_fScale);
       if(window._g)_g.controls().enableRotate=false;}
     if(window._g&&!RM){ /* travel: each command center pans the planet */
       const L={sales:{lat:20,lng:78},media:{lat:26,lng:5},proj:{lat:42,lng:-40},acad:{lat:10.3,lng:76.4}};
@@ -705,12 +731,15 @@ const HQ={lat:9.93,lng:76.26},ED={lat:10.78,lng:76.07};
 function initGlobe(){
   try{
     if(!window.Globe)throw 0;
+    _GS=Math.min(460,Math.max(290,innerWidth-24));
+    const _ge=$('globeEl');_ge.style.width=_GS+'px';_ge.style.height=_GS+'px';
+    if(_GS<460)_ge.style.margin='-20px 0';
     const g=Globe()($('globeEl'))
       .backgroundColor('rgba(0,0,0,0)')
       .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
       .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true).atmosphereColor('#4d9fff').atmosphereAltitude(.2)
-      .width(460).height(460)
+      .width(_GS).height(_GS)
       .pointLat('lat').pointLng('lng').pointColor(d=>d.c).pointAltitude(.015).pointRadius(d=>d.s||.35)
       .ringLat('lat').ringLng('lng').ringColor(d=>()=>d.c).ringMaxRadius(4).ringPropagationSpeed(2).ringRepeatPeriod(1400)
       .arcColor(()=>['rgba(237,31,81,.05)','rgba(240,88,37,.85)']).arcDashLength(.45).arcDashGap(.25).arcDashAnimateTime(1700).arcStroke(.4).arcAltitudeAutoScale(.4);
@@ -1195,7 +1224,7 @@ async function toggleJarvis(){
   if(_jOn){_jOn=false;stopRec();cancelAnimationFrame(_jRaf);
     try{_jStream&&_jStream.getTracks().forEach(t=>t.stop());}catch(_){}
     try{_jCtx&&_jCtx.close();}catch(_){}_jCtx=null;_jStream=null;
-    const ge=$('globeEl');ge.style.transform=gTx(_gFloat?1/3:1);ge.style.filter='';
+    const ge=$('globeEl');ge.style.transform=gTx(_gFloat?_fScale:1);ge.style.filter='';
     if(window._g)_g.controls().autoRotateSpeed=.55;
     sub.textContent='Tap the globe · JARVIS listens';return;}
   try{
@@ -1209,7 +1238,7 @@ async function toggleJarvis(){
     const ge=$('globeEl');
     const loop=()=>{if(!_jOn)return;_jAn.getByteFrequencyData(_jBuf);
       const v=_jBuf.reduce((a,b)=>a+b,0)/_jBuf.length/255;
-      ge.style.transform=gTx((_gFloat?1/3:1)*(1+v*.18));
+      ge.style.transform=gTx((_gFloat?_fScale:1)*(1+v*.18));
       ge.style.filter=`drop-shadow(0 0 ${(14+v*70).toFixed(0)}px rgba(237,31,81,${(.3+v*.5).toFixed(2)}))`;
       if(window._g)_g.controls().autoRotateSpeed=.55+v*8;
       _jRaf=requestAnimationFrame(loop);};
@@ -1221,6 +1250,7 @@ async function toggleJarvis(){
   gz.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;},true);
   gz.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-sx,e.clientY-sy)<8)toggleJarvis();},true);
 })();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
