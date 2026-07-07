@@ -206,7 +206,7 @@ body[data-th="deck"]{--thr:77,159,255}body[data-th="sales"]{--thr:0,224,138}body
 .hcard{border:1px solid rgba(var(--thr),.2);border-radius:14px;padding:14px 16px;background:rgba(5,6,10,.75);backdrop-filter:blur(10px)}
 .hcard .eb{margin-bottom:8px}
 .globe-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:380px}
-#globeEl{width:380px;height:380px}
+#globeEl{width:460px;height:460px;margin:-40px 0;position:relative;z-index:1}
 .globe-fallback{width:300px;height:300px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(77,159,255,.5),rgba(10,12,26,.9) 60%);box-shadow:0 0 90px rgba(77,159,255,.3),inset 0 0 60px rgba(0,0,0,.6)}
 .jarvis{display:flex;flex-direction:column;align-items:center;margin-top:-24px;z-index:2}
 .orb{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#ff7a94,#ed1f51 45%,#5c0d22 90%);box-shadow:0 0 30px rgba(237,31,81,.6),0 0 80px rgba(237,31,81,.22);animation:breathe 3.2s ease-in-out infinite}
@@ -276,7 +276,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
 <!-- ══ LOGIN ══ -->
 <div id="login">
   <div class="lbox" id="lbox">
-    <img class="l-logo" src="brand/logo-full.png" alt="Broken English" onerror="this.style.display='none';document.querySelector('.l-word').style.display='block'"/>
+    <img class="l-logo" src="brand/logo-mark.png" alt="Broken English" onerror="this.style.display='none';document.querySelector('.l-word').style.display='block'"/>
     <div class="l-word">BRO<b>K</b>EN ENGLISH</div>
     <div class="eb">Command Center · Founder Access</div>
     <input class="l-inp" id="lu" placeholder="Username" autocomplete="username"/>
@@ -293,7 +293,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
   <!-- SIDEBAR -->
   <nav class="sb">
     <div class="sb-brand">
-      <img src="brand/logo-full.png" alt="Broken English" style="height:30px" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=w>BRO<b>K</b>EN<br>ENGLISH</div>')"/>
+      <img src="brand/logo-mark.png" alt="Broken English" style="height:30px" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=w>BRO<b>K</b>EN<br>ENGLISH</div>')"/>
     </div>
     <div class="sb-sec eb">Mission Control</div>
     <a class="sb-it on" data-p="deck" onclick="go('deck')"><i class="ti ti-layout-dashboard"></i>Founder Deck</a>
@@ -597,6 +597,17 @@ function go(p){
 /* ═══════════ BOOT ═══════════ */
 function boot(){
   $('uName').textContent=founder.name;
+  /* per-founder DP: repo photos + optional site_config team.photos override */
+  const PHOTOS={sreekanth:'photos/Sreekanth.jpg',hasnu:'photos/Hasnu.png',jazeel:'photos/Jazeel.png'};
+  (function(){
+    const img=document.querySelector('.sb-user img'),fb=document.querySelector('.sb-user .fb');
+    const key=(founder.username||'').toLowerCase();
+    fb.textContent=((founder.name||'').match(/\b[A-Za-z]/g)||['B','E']).join('').slice(0,2).toUpperCase();
+    if(PHOTOS[key]){img.src=PHOTOS[key];img.style.display='';fb.style.display='none';}
+    else{img.style.display='none';fb.style.display='flex';}
+    acadDB.from('site_config').select('value').eq('key','team.photos').maybeSingle()
+      .then(({data})=>{if(data&&data.value&&data.value[key]){img.src=data.value[key];img.style.display='';fb.style.display='none';}},()=>{});
+  })();
   tick();setInterval(tick,1000);
   initGlobe();
   Promise.allSettled([loadMaster(),loadAssess(),loadAcad(),loadMedia(),loadProjects()]).then(()=>{renderDeck();buildBriefing();});
@@ -618,7 +629,7 @@ function initGlobe(){
       .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
       .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true).atmosphereColor('#4d9fff').atmosphereAltitude(.2)
-      .width(380).height(380)
+      .width(460).height(460)
       .pointLat('lat').pointLng('lng').pointColor(d=>d.c).pointAltitude(.015).pointRadius(d=>d.s||.35)
       .ringLat('lat').ringLng('lng').ringColor(d=>()=>d.c).ringMaxRadius(4).ringPropagationSpeed(2).ringRepeatPeriod(1400)
       .arcColor(()=>['rgba(237,31,81,.05)','rgba(240,88,37,.85)']).arcDashLength(.45).arcDashGap(.25).arcDashAnimateTime(1700).arcStroke(.4).arcAltitudeAutoScale(.4);
@@ -628,7 +639,7 @@ function initGlobe(){
       g.pointsData([...NETRED.map(p=>({...p,c:'#ed1f51'})),...NETBLUE.map(p=>({...p,c:'#4d9fff'})),{...HQ,c:'#ed1f51',s:.6},{...ED,c:'#00e08a',s:.45}]);
       g.arcsData([...NETRED,...NETBLUE].map(p=>({startLat:p.lat,startLng:p.lng,endLat:HQ.lat,endLng:HQ.lng})));
       g.ringsData([{...HQ,c:'#ed1f51'},{...ED,c:'#00e08a'}]);
-      g.pointOfView({lat:10.3,lng:76.4,altitude:1.4});g.controls().autoRotateSpeed=.55;return;
+      g.pointOfView({lat:10.3,lng:76.4,altitude:1.55});g.controls().autoRotateSpeed=.55;return;
     }
     /* cinematic boot: dots → lines → Kerala → pulse → zoom → mission acquired */
     g.pointOfView({lat:16,lng:60,altitude:2.6});
@@ -638,7 +649,7 @@ function initGlobe(){
     setTimeout(()=>g.pointsData([...red,...blue]),1800);
     setTimeout(()=>g.arcsData([...NETRED,...NETBLUE].map(p=>({startLat:p.lat,startLng:p.lng,endLat:HQ.lat,endLng:HQ.lng}))),2700);
     setTimeout(()=>{g.pointsData([...red,...blue,{...HQ,c:'#ed1f51',s:.65},{...ED,c:'#00e08a',s:.5}]);g.ringsData([{...HQ,c:'#ed1f51'},{...ED,c:'#00e08a'}]);},3700);
-    setTimeout(()=>g.pointOfView({lat:10.3,lng:76.4,altitude:1.15},2000),4600);
+    setTimeout(()=>g.pointOfView({lat:10.3,lng:76.4,altitude:1.55},2000),4600);
     setTimeout(()=>{$('missionTag').style.opacity=1;},6300);
     setTimeout(()=>{$('missionTag').style.opacity=0;g.controls().autoRotateSpeed=.55;},8200);
   }catch(e){$('globeEl').innerHTML='<div class="globe-fallback"></div>';}
