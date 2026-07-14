@@ -279,40 +279,49 @@ function logout(){
 }
 
 async function loadLive(){
-  const {data:studs}=await sb.from('students').select('uin,name,contact,batch_name,trainer_name,programme,status');
+  const {data:studs}=await sb.from('students').select('uin,name,contact,batch_name,trainer_name,programme,status,planned_end_date');
   let rows=(studs||[]).filter(s=>s.name);
   const isTrainer=currentUser.role!=='founder'&&currentUser.role!=='academic_head';
   if(isTrainer){const me=(currentUser.name||'').toLowerCase();rows=rows.filter(s=>(s.trainer_name||'').toLowerCase()===me);}
+  const today=new Date().toISOString().slice(0,10);
   const map={};
-  rows.forEach(s=>{const b=s.batch_name||'Unassigned';if(!map[b])map[b]={name:b,trainer:s.trainer_name||'\u2014',prog:s.programme||'',students:[]};map[b].students.push(s);});
-  const batches=Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
-  window._liveBatches=batches;
+  rows.forEach(s=>{
+    const elite=/elite/i.test(s.programme||'');
+    const key=elite?((s.batch_name||'Elite')+' \u00b7 '+s.name):(s.batch_name||'Unassigned');
+    if(!map[key])map[key]={name:key,trainer:s.trainer_name||'\u2014',prog:s.programme||'',elite:elite,end:null,students:[]};
+    map[key].students.push(s);
+    if(s.planned_end_date&&(!map[key].end||s.planned_end_date>map[key].end))map[key].end=s.planned_end_date;
+  });
+  const all=Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
+  const active=all.filter(b=>!b.end||b.end>=today);
+  const done=all.filter(b=>b.end&&b.end<today);
+  window._liveBatches=active.concat(done);
+  const card=(b,i)=>'<div class="card" style="margin-bottom:10px;text-align:left">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<div><b>'+esc(b.name)+'</b> \u00b7 '+esc(b.trainer)+' \u00b7 '+esc(b.prog)+(b.elite?' \u00b7 1:1':' \u00b7 '+b.students.length+' students')+'</div>'
+    +'<button class="act-btn" onclick="openAtt('+i+')">Mark Attendance</button></div>'
+    +(b.elite?'':'<div style="margin-top:6px;font-size:12px;opacity:.7">'+b.students.map(function(s){return esc(s.name);}).join(' \u00b7 ')+'</div>')
+    +'</div>';
   const el=document.getElementById('liveBatches'); el.className='';
-  el.innerHTML=batches.length?batches.map((b,i)=>`
-    <div class="card" style="margin-bottom:10px;text-align:left">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <div><b>${esc(b.name)}</b> \u00b7 ${esc(b.trainer)} \u00b7 ${esc(b.prog)} \u00b7 ${b.students.length} students</div>
-        <button class="act-btn" onclick="openAtt(${i})">Mark Attendance</button>
-      </div>
-      <div style="margin-top:6px;font-size:12px;opacity:.7">${b.students.map(s=>esc(s.name)).join(' \u00b7 ')}</div>
-    </div>`).join(''):'<div class="empty">No batches found for you.</div>';
+  let html=active.length?active.map(function(b,i){return card(b,i);}).join(''):'<div class="empty">No active batches for you.</div>';
+  if(done.length){
+    html+='<details style="margin-top:14px"><summary style="cursor:pointer;opacity:.6;font-size:13px">Completed / past batches ('+done.length+')</summary><div style="margin-top:10px">'
+      +done.map(function(b,i){return card(b,active.length+i);}).join('')+'</div></details>';
+  }
+  el.innerHTML=html;
 }
 function openAtt(i){
   const b=window._liveBatches[i]; if(!b)return; window._attBatch=b;
   document.getElementById('att_title').textContent='Attendance \u00b7 '+b.name;
   document.getElementById('att_date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('att_list').innerHTML=b.students.map((s,j)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)">
-      <span>${esc(s.name)}</span>
-      <label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" id="att_${j}" checked/> Present</label>
-    </div>`).join('');
+  document.getElementById('att_list').innerHTML=b.students.map(function(s,j){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span>'+esc(s.name)+'</span><label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" id="att_'+j+'" checked/> Present</label></div>';}).join('');
   document.getElementById('modalAtt').classList.add('on');
 }
 async function saveAtt(){
   const b=window._attBatch; if(!b)return;
   const num=parseInt(document.getElementById('att_num').value)||1;
   const date=document.getElementById('att_date').value||new Date().toISOString().slice(0,10);
-  const rows=b.students.map((s,j)=>({batch_name:b.name,student_uin:s.uin,session_num:num,session_date:date,status:document.getElementById('att_'+j).checked?'present':'absent',marked_by:currentUser.name}));
+  const rows=b.students.map(function(s,j){return {batch_name:b.name,student_uin:s.uin,session_num:num,session_date:date,status:document.getElementById('att_'+j).checked?'present':'absent',marked_by:currentUser.name};});
   const {error}=await sb.from('attendance').insert(rows);
   if(error){alert('Save failed: '+error.message);return;}
   alert('Attendance saved: '+b.name+' \u00b7 session '+num);
