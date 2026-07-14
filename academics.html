@@ -279,40 +279,61 @@ function logout(){
 }
 
 async function loadLive(){
+  const isHead=currentUser.role==='founder'||currentUser.role==='academic_head';
   const {data:studs}=await sb.from('students').select('uin,name,contact,batch_name,trainer_name,programme,status,planned_end_date');
   let rows=(studs||[]).filter(s=>s.name);
-  const isTrainer=currentUser.role!=='founder'&&currentUser.role!=='academic_head';
-  if(isTrainer){const me=(currentUser.name||'').toLowerCase();rows=rows.filter(s=>(s.trainer_name||'').toLowerCase()===me);}
+  if(!isHead){const me=(currentUser.name||'').toLowerCase();rows=rows.filter(s=>(s.trainer_name||'').toLowerCase()===me);}
   const today=new Date().toISOString().slice(0,10);
   const map={};
   rows.forEach(s=>{
     const elite=/elite/i.test(s.programme||'');
     const key=elite?((s.batch_name||'Elite')+' \u00b7 '+s.name):(s.batch_name||'Unassigned');
-    if(!map[key])map[key]={name:key,trainer:s.trainer_name||'\u2014',prog:s.programme||'',elite:elite,end:null,students:[]};
+    if(!map[key])map[key]={name:key,raw:s.batch_name||'',trainer:s.trainer_name||'\u2014',prog:s.programme||'',elite:elite,end:null,students:[]};
     map[key].students.push(s);
     if(s.planned_end_date&&(!map[key].end||s.planned_end_date>map[key].end))map[key].end=s.planned_end_date;
   });
+  // sessions done per batch (by attendance)
+  const doneMap={};
+  try{const {data:att}=await sb.from('attendance').select('batch_name,session_num');
+    (att||[]).forEach(a=>{(doneMap[a.batch_name]=doneMap[a.batch_name]||new Set()).add(a.session_num);});}catch(e){}
   const all=Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
   const active=all.filter(b=>!b.end||b.end>=today);
   const done=all.filter(b=>b.end&&b.end<today);
   window._liveBatches=active.concat(done);
-  const card=(b,i)=>'<div class="card" style="margin-bottom:10px;text-align:left">'
+  const card=(b,i)=>{
+    const total=b.elite?20:32; const dn=(doneMap[b.name]||new Set()).size; const pct=Math.min(100,Math.round(dn/total*100));
+    return '<div class="card" style="margin-bottom:10px;text-align:left">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
     +'<div><b>'+esc(b.name)+'</b> \u00b7 '+esc(b.trainer)+' \u00b7 '+esc(b.prog)+(b.elite?' \u00b7 1:1':' \u00b7 '+b.students.length+' students')+'</div>'
-    +'<button class="act-btn" onclick="openAtt('+i+')">Mark Attendance</button></div>'
+    +'<div style="display:flex;gap:6px">'
+    +(isHead&&!b.elite?'<button class="act-btn" onclick="renameBatch('+i+')">Rename</button>':'')
+    +'<button class="act-btn" onclick="openAtt('+i+')">Mark Attendance</button></div></div>'
     +(b.elite?'':'<div style="margin-top:6px;font-size:12px;opacity:.7">'+b.students.map(function(s){return esc(s.name);}).join(' \u00b7 ')+'</div>')
+    +'<div style="height:7px;background:rgba(255,255,255,.06);border-radius:4px;margin-top:8px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ed1f51,#f05825)"></div></div>'
+    +'<div style="font-size:11px;opacity:.6;margin-top:3px">'+dn+' / '+total+' sessions marked</div>'
     +'</div>';
+  };
   const el=document.getElementById('liveBatches'); el.className='';
   let html=active.length?active.map(function(b,i){return card(b,i);}).join(''):'<div class="empty">No active batches for you.</div>';
-  if(done.length){
-    html+='<details style="margin-top:14px"><summary style="cursor:pointer;opacity:.6;font-size:13px">Completed / past batches ('+done.length+')</summary><div style="margin-top:10px">'
-      +done.map(function(b,i){return card(b,active.length+i);}).join('')+'</div></details>';
-  }
+  if(done.length){html+='<details style="margin-top:14px"><summary style="cursor:pointer;opacity:.6;font-size:13px">Completed / past batches ('+done.length+')</summary><div style="margin-top:10px">'+done.map(function(b,i){return card(b,active.length+i);}).join('')+'</div></details>';}
   el.innerHTML=html;
 }
-function openAtt(i){
+async function renameBatch(i){
+  const b=window._liveBatches[i]; if(!b||!b.raw)return;
+  const nn=prompt('Rename batch \u201c'+b.raw+'\u201d to:',b.raw);
+  if(!nn||nn.trim()===''||nn===b.raw)return;
+  const {error}=await sb.from('students').update({batch_name:nn.trim()}).eq('batch_name',b.raw);
+  if(error){alert('Rename failed: '+error.message);return;}
+  await sb.from('attendance').update({batch_name:nn.trim()}).eq('batch_name',b.raw);
+  alert('Renamed to '+nn.trim()); loadLive();
+}
+async function openAtt(i){
   const b=window._liveBatches[i]; if(!b)return; window._attBatch=b;
-  document.getElementById('att_title').textContent='Attendance \u00b7 '+b.name;
+  const total=b.elite?20:32; let next=1,dn=0;
+  try{const {data}=await sb.from('attendance').select('session_num').eq('batch_name',b.name);
+    const nums=[...new Set((data||[]).map(r=>r.session_num))]; dn=nums.length; next=(nums.length?Math.max.apply(null,nums):0)+1;}catch(e){}
+  document.getElementById('att_num').value=next;
+  document.getElementById('att_title').innerHTML=esc(b.name)+' <span style="font-weight:400;opacity:.6;font-size:13px">\u00b7 session '+next+' of '+total+' \u00b7 '+dn+' done</span>';
   document.getElementById('att_date').value=new Date().toISOString().slice(0,10);
   document.getElementById('att_list').innerHTML=b.students.map(function(s,j){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span>'+esc(s.name)+'</span><label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" id="att_'+j+'" checked/> Present</label></div>';}).join('');
   document.getElementById('modalAtt').classList.add('on');
@@ -324,7 +345,7 @@ async function saveAtt(){
   const rows=b.students.map(function(s,j){return {batch_name:b.name,student_uin:s.uin,session_num:num,session_date:date,status:document.getElementById('att_'+j).checked?'present':'absent',marked_by:currentUser.name};});
   const {error}=await sb.from('attendance').insert(rows);
   if(error){alert('Save failed: '+error.message);return;}
-  alert('Attendance saved: '+b.name+' \u00b7 session '+num);
+  alert('Attendance saved: '+b.name+' \u00b7 session '+num); loadLive();
   document.getElementById('modalAtt').classList.remove('on');
 }
 async function boot(){
