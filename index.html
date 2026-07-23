@@ -336,6 +336,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
     <div class="sb-sec eb">Operations</div>
     <a class="sb-it" data-p="acad" onclick="go('acad')"><i class="ti ti-school"></i>Academics Command</a>
     <a class="sb-it" href="academics.html" target="_blank"><i class="ti ti-external-link"></i>Academics Portal</a>
+    <a class="sb-it" href="sales.html" target="_blank"><i class="ti ti-external-link"></i>Sales Portal</a>
     <a class="sb-it" data-p="sales" onclick="go('sales')"><i class="ti ti-trending-up"></i>Sales Command</a>
     <a class="sb-it" data-p="media" onclick="go('media')"><i class="ti ti-video"></i>Media Command</a>
     <a class="sb-it" data-p="proj" onclick="go('proj')"><i class="ti ti-box"></i>Projects Command</a>
@@ -398,6 +399,7 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
       <div class="gr">
         <div class="pn s5"><div class="ph"><h2>Admissions Trend</h2><span class="tg">Live · 6 months</span></div><div id="admTrend" class="empty">Loading…</div></div>
         <div class="pn s4"><div class="ph"><div class="orb" style="width:26px;height:26px"></div><h2 style="margin-left:2px">Founder Briefing</h2><span class="tg">Auto</span></div><div id="briefBox"><div class="empty">Reading all departments…</div></div></div>
+        <div class="pn s4"><div class="ph"><h2>Team Today</h2><span class="tg" id="teamTag">Live</span></div><div id="teamBox"><div class="empty">Loading team…</div></div></div>
         <div class="pn s3"><div class="ph"><h2>System Health</h2></div><div id="healthBox"></div></div>
       </div>
 
@@ -716,7 +718,7 @@ function boot(){
   })();
   tick();setInterval(tick,1000);
   initGlobe();
-  Promise.allSettled([loadMaster(),loadAssess(),loadAcad(),loadMedia(),loadProjects(),loadPayments()]).then(()=>{renderDeck();buildBriefing();});
+  Promise.allSettled([loadMaster(),loadAssess(),loadAcad(),loadMedia(),loadProjects(),loadPayments(),loadTeam()]).then(()=>{renderDeck();buildBriefing();});
 }
 function tick(){
   const n=new Date();
@@ -773,6 +775,29 @@ function initGlobe(){
 }
 
 /* ═══════════ LOADERS ═══════════ */
+async function loadTeam(){
+  try{
+    var d=new Date().toISOString().slice(0,10);
+    var r=await Promise.all([
+      acadDB.from('staff_attendance').select('username,name,role,clock_in,clock_out,minutes').eq('work_date',d),
+      acadDB.from('leave_days').select('username,name,reason').eq('leave_date',d),
+      acadDB.from('roles').select('name,username,role')]);
+    var att=r[0].data||[],lv=r[1].data||[],staff=r[2].data||[];
+    var inM={},lvM={};att.forEach(function(a){inM[a.username]=a;});lv.forEach(function(l){lvM[l.username]=l;});
+    var rows=staff.filter(function(s){return s.role!=='admin';});
+    var working=rows.filter(function(s){var a=inM[s.username];return a&&a.clock_in&&!a.clock_out;}).length;
+    var onleave=rows.filter(function(s){return lvM[s.username];}).length;
+    $('teamTag').textContent=working+' working · '+onleave+' on leave';
+    $('teamBox').innerHTML=rows.length?rows.map(function(s){
+      var a=inM[s.username],l=lvM[s.username],chip,col;
+      if(l){chip='On leave';col='var(--warn)';}
+      else if(a&&a.clock_in&&!a.clock_out){chip='Working';col='var(--ok)';}
+      else if(a&&a.clock_out){chip='Done '+Math.floor((a.minutes||0)/60)+'h';col='var(--ghost)';}
+      else{chip='Not in';col='var(--ghost)';}
+      return '<div class="li"><span class="t">'+esc(s.name)+'</span><span class="m">'+esc(s.role||'')+'</span><span class="m" style="color:'+col+'">'+chip+'</span></div>';
+    }).join(''):'<div class="empty">No staff records.</div>';
+  }catch(e){$('teamBox').innerHTML='<div class="empty">Team data not wired yet — run Phase 5 SQL.</div>';}
+}
 async function loadPayments(){
   try{
     const{data,error}=await acadDB.from('payments').select('student_uin,amount,balance,next_due_date');
