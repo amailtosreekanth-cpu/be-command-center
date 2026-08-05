@@ -91,6 +91,8 @@ table.list tr:hover td{background:rgba(255,255,255,.02)}
 .src-light{width:9px;height:9px;border-radius:50%;display:inline-block;background:#3a3f4a}
 .src-light.ok{background:#2fe08c;box-shadow:0 0 8px rgba(47,224,140,.7)}
 .src-light.fail{background:#ff5252;box-shadow:0 0 8px rgba(255,82,82,.7)}
+.dchip{padding:7px 11px!important}
+.dchip.on{border-color:rgba(var(--thr),.7)!important;color:#fff!important;background:linear-gradient(120deg,rgba(237,31,81,.28),rgba(240,88,37,.28))!important}
 .warn-banner{border:1px solid rgba(255,194,75,.4);background:rgba(255,194,75,.06);color:#ffc24b;border-radius:12px;padding:11px 15px;font-size:11.5px;margin-bottom:16px;display:none}
 </style>
 </head>
@@ -217,10 +219,11 @@ async function enter(){
   <div class="tabs" id="tabs"></div>
   <div id="tabBody"></div>`;
   if(ME.username==='admin'&&ME.password==='admin123')$('pwWarn').style.display='block';
-  const TABS=[['team','ti-users','Identity & Team'],['courses','ti-school','Courses'],['sources','ti-database','Data Sources'],['globe','ti-world','Visual & Globe'],['content','ti-notes','Content'],['sales','ti-trending-up','Sales Strategy']];
+  const TABS=[['team','ti-users','Identity & Team'],['courses','ti-school','Courses'],['batches','ti-layout-grid','Batches'],['sources','ti-database','Data Sources'],['globe','ti-world','Visual & Globe'],['content','ti-notes','Content'],['sales','ti-trending-up','Sales Strategy']];
   $('tabs').innerHTML=TABS.map(([k,i,l])=>`<button class="tab" data-t="${k}" onclick="goTab('${k}')"><i class="ti ${i}"></i>${l}</button>`).join('');
   await loadCfg();
   await loadRoles();
+  await loadOps();
   goTab('team');
 }
 async function loadCfg(){
@@ -248,7 +251,7 @@ async function saveCfg(key,value){
   toast(WIRED[key]?'Saved — live on next dashboard refresh.':'Stored — dashboards read this key in the next wiring pass.');
 }
 function toast(m,bad){const t=$('toast');t.textContent=m;t.className='toast on'+(bad?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3200);}
-function goTab(k){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===k));({team:rTeam,courses:rCourses,sources:rSources,globe:rGlobe,content:rContent,sales:rSales})[k]();}
+function goTab(k){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===k));({team:rTeam,courses:rCourses,batches:rBatches,sources:rSources,globe:rGlobe,content:rContent,sales:rSales})[k]();}
 function badge(key){return WIRED[key]?'<span class="chip live">live</span>':'<span class="chip pend">stored · wiring pending</span>';}
 function closeSheet(){$('bk').classList.remove('on');}
 function openSheet(html){$('sheetBody').innerHTML=html;$('bk').classList.add('on');}
@@ -293,8 +296,18 @@ function rTeam(){
     <div class="hint" style="margin-top:10px">New departments become sections on the founder deck in the wiring pass — attach their sheets in Data Sources → More sheets, assign people above.</div>
   </div>
   <div class="panel sect">
-    <div class="eb">Trainers roster</div>
-    <div class="hint">Trainer add / delete / batch assignment lives in the <a href="academics.html" target="_blank" style="color:#ed6d8d">Academics Portal</a> (admin view) — it already has the guarded CRUD. Logins for trainers are managed in the table above.</div>
+    <div class="eb">Trainers · full-time / part-time ${OPS.ok?'<span class="chip live">live DB</span>':'<span class="chip pend">run migration (Courses tab)</span>'}</div>
+    ${OPS.ok?`<table class="list"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Hours / Slots</th><th></th></tr></thead><tbody>
+    ${OPS.trainers.map((t,i)=>{const sl=OPS.slots.filter(x=>x.trainer_id===t.id);
+     return `<tr style="${t.status==='inactive'?'opacity:.45':''}"><td><b>${esc(t.name)}</b></td>
+     <td><span class="rolechip">${t.type==='pt'?'Part-time':'Full-time'}</span></td>
+     <td>${esc(t.status)}</td>
+     <td style="font-size:10.5px;color:var(--steel)">${t.type==='pt'?(sl.length?sl.map(x=>`${x.weekday} ${x.start_time}–${x.end_time}${x.booked?' ●':' ○'}`).join(' · '):'no slots yet'):((t.work_start&&t.work_end)?`${t.work_start}–${t.work_end}${t.weekly_hours?' · '+t.weekly_hours+'h/wk':''}`:'hours not set')}</td>
+     <td style="text-align:right"><button class="btn2" onclick="editTrainer(${i})"><i class="ti ti-pencil"></i> Edit</button></td></tr>`;}).join('')}
+    </tbody></table>
+    <div style="margin-top:12px"><button class="btn" onclick="editTrainer(-1)"><i class="ti ti-plus"></i> Add trainer</button></div>
+    <div class="hint" style="margin-top:8px">○ free · ● booked. Free PT slots become the sales slot board in Phase 3. Batch assignment: Batches tab.</div>`:
+    `<div class="hint">Run the Phase 1 migration (Courses or Batches tab) to manage trainers, hours and slots here.</div>`}
   </div>`;
 }
 function togglePw(i){const el=$('pw'+i);el.textContent=el.textContent==='••••••'?ROLES[i].password:'••••••';}
@@ -305,7 +318,7 @@ function editUser(i){
     <div class="fld"><label>Name</label><input id="eu_n" value="${esc(u.name)}"/></div>
     <div class="fld"><label>Username</label><input id="eu_u" value="${esc(u.username)}" ${i<0?'':'disabled'}/></div>
     <div class="fld"><label>Password</label><input id="eu_p" value="${esc(u.password)}"/></div>
-    <div class="fld"><label>Role</label><select id="eu_r">${['founder','admin','academic_head','trainer'].map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="fld"><label>Role</label><select id="eu_r">${['founder','admin','academic_head','trainer','counsellor','media','hr'].map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select></div>
     <div class="fld"><label>Photo path / URL (repo photos/… recommended)</label><input id="eu_ph" value="${esc(photo)}" placeholder="photos/Name.png"/></div>
     <div class="row" style="justify-content:flex-end;margin-top:16px">
       <button class="btn2" onclick="closeSheet()">Cancel</button>
@@ -336,48 +349,346 @@ async function delUser(i){
 }
 
 /* ═══════════ TAB 2 · COURSES ═══════════ */
+const MIG_SQL=`-- ═══════════════════════════════════════════════════════════════
+-- BROKEN ENGLISH · PHASE 1 MIGRATION (courses / batches / trainers /
+-- payments / attendance / timeclock scaffolding)
+-- Run ONCE in Supabase SQL editor · project baazubvfsrpmbfmrzumw
+-- (verify the URL bar shows baazubvfsrpmbfmrzumw before running!)
+-- Idempotent: safe to re-run.
+-- ═══════════════════════════════════════════════════════════════
+
+alter table roles drop constraint if exists roles_role_check;
+
+-- ── Courses (fee defined here, per your spec) ──
+create table if not exists courses(
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  total_group int default 0,
+  total_mc int default 0,
+  total_oneonone int default 0,
+  total_sessions int default 0,          -- flat-count courses (e.g. Speaking 25)
+  duration_days int default 60,
+  default_days text default 'Mon, Tue, Wed, Thu',
+  mc_day text default 'Sat',
+  fee numeric default 0,
+  active boolean default true,
+  created_at timestamptz default now());
+
+-- ── Batches: lifecycle + course link ──
+alter table batches drop constraint if exists batches_batch_type_check;
+alter table batches add column if not exists sessions_total int;
+alter table batches add column if not exists course_id uuid references courses(id);
+alter table batches add column if not exists capacity int;
+alter table batches add column if not exists completed_at timestamptz;
+
+-- ── Trainers: FT hours / PT prep ──
+alter table trainers add column if not exists work_start text;
+alter table trainers add column if not exists work_end text;
+alter table trainers add column if not exists weekly_hours int;
+
+-- ── PT trainer availability → future sales slot board ──
+create table if not exists trainer_slots(
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid references trainers(id) on delete cascade,
+  weekday text, start_time text, end_time text,
+  booked boolean default false,
+  course_hint text, note text);
+
+-- ── Real session calendar (replaces time-paced estimates) ──
+create table if not exists class_sessions(
+  id uuid primary key default gen_random_uuid(),
+  batch_id uuid references batches(id) on delete cascade,
+  session_no int,
+  stype text default 'group',            -- group / mc / oneonone / activity
+  sdate date, stime text,
+  status text default 'scheduled',       -- scheduled / done / cancelled
+  trainer_id uuid references trainers(id),
+  notes text,
+  created_at timestamptz default now());
+
+-- ── Attendance (trainer marks per session) ──
+create table if not exists attendance(
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid references class_sessions(id) on delete cascade,
+  student_id uuid references students(id) on delete cascade,
+  status text default 'present',         -- present / absent / late
+  marked_by text,
+  created_at timestamptz default now(),
+  unique(session_id,student_id));
+
+-- ── Payments: plan per student + transactions ──
+create table if not exists payments(
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade unique,
+  course_fee numeric default 0,
+  discount numeric default 0,
+  discount_by text,
+  next_due date,
+  note text,
+  updated_at timestamptz default now());
+
+create table if not exists payment_entries(
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
+  amount numeric not null,
+  paid_at date default current_date,
+  method text,
+  entered_by text,
+  created_at timestamptz default now());
+
+-- ── HR: clock-in/out + leave ──
+create table if not exists timeclock(
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  clock_in timestamptz default now(),
+  clock_out timestamptz);
+
+create table if not exists leaves(
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  from_date date, to_date date,
+  reason text,
+  status text default 'approved',
+  created_at timestamptz default now());
+
+-- ── Audit trail (who changed what) ──
+create table if not exists audit_log(
+  id uuid primary key default gen_random_uuid(),
+  actor text, action text, target text, detail jsonb,
+  created_at timestamptz default now());
+
+-- ── RLS: permissive (internal tool posture, same as existing tables) ──
+do $$ declare t text;
+begin
+  foreach t in array array['courses','trainer_slots','class_sessions','attendance',
+    'payments','payment_entries','timeclock','leaves','audit_log'] loop
+    execute format('alter table %I enable row level security',t);
+    execute format('drop policy if exists "allow all %s" on %I',t,t);
+    execute format('create policy "allow all %s" on %I for all using (true) with check (true)',t,t);
+  end loop;
+end $$;
+
+-- ── Seed courses (set real fees in Admin → Courses) ──
+insert into courses(name,total_group,total_mc,total_oneonone,total_sessions,duration_days,default_days,mc_day,fee)
+select v.* from (values
+ ('Spoken English Foundation',32,8,2,0,63,'Mon, Tue, Wed, Thu','Sat',0::numeric),
+ ('Spoken English Upgrade',32,8,2,0,63,'Mon, Tue, Wed, Thu','Sat',0::numeric),
+ ('Elite One-on-One',0,0,20,0,30,'','',0::numeric),
+ ('IELTS Group',0,0,0,24,60,'Mon, Tue, Wed, Thu','',0::numeric),
+ ('IELTS One-on-One',0,0,0,12,45,'','',0::numeric),
+ ('Speaking Sessions',0,0,0,25,30,'Mon, Tue, Wed, Thu, Fri','',0::numeric)
+) v(name,tg,tm,t1,ts,dd,dda,mcd,fee)
+where not exists (select 1 from courses);
+
+-- ── Seed employee logins (CHANGE PASSWORDS in Admin → Identity & Team) ──
+insert into roles(name,role,username,password)
+select v.* from (values
+ ('Ashika','counsellor','ashika','ashika123'),
+ ('Alisha','counsellor','alisha','alisha123'),
+ ('Hiba','counsellor','hiba','hiba123'),
+ ('Sumayya','counsellor','sumayya','sumayya123'),
+ ('Diya','counsellor','diya','diya123'),
+ ('Anal','media','anal','anal123'),
+ ('Ali','media','ali','ali123')
+) v(n,r,u,p)
+where not exists (select 1 from roles where username=v.u);
+
+-- Done. Verify:
+select 'courses' t, count(*) from courses
+union all select 'roles', count(*) from roles
+union all select 'trainer_slots', count(*) from trainer_slots;
+`;
+let OPS={ok:false,courses:[],trainers:[],batches:[],slots:[],students:[],sessions:[]};
+async function loadOps(){
+  const [c,t,b,sl,st,cs]=await Promise.all([
+    DB.from('courses').select('*').order('name'),
+    DB.from('trainers').select('*').order('name'),
+    DB.from('batches').select('*').order('name'),
+    DB.from('trainer_slots').select('*'),
+    DB.from('students').select('id,name,batch_id'),
+    DB.from('class_sessions').select('id,batch_id,status')]);
+  if(c.error){OPS.ok=false;return;}
+  OPS={ok:true,courses:c.data||[],trainers:t.data||[],batches:b.data||[],slots:sl.data||[],students:st.data||[],sessions:(cs.data||[])};
+}
+async function audit(action,target,detail){try{await DB.from('audit_log').insert({actor:ME.username,action,target,detail});}catch(_){}}
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const dayChips=sel=>DAYS.map(d=>`<button type="button" class="btn2 dchip ${sel.includes(d)?'on':''}" data-d="${d}" onclick="this.classList.toggle('on')">${d}</button>`).join('');
+const pickDays=box=>[...document.querySelectorAll('#'+box+' .dchip.on')].map(b=>b.dataset.d).join(', ');
+const courseTotal=c=>+c.total_sessions>0?+c.total_sessions:(+c.total_group + +c.total_mc + +c.total_oneonone);
+const courseStruct=c=>+c.total_sessions>0?`${c.total_sessions} sessions`:`${c.total_group}G + ${c.total_mc}MC + ${c.total_oneonone}·1:1`;
+function migCard(){return `<div class="setup"><div class="eb" style="color:#ffc24b">Phase 1 migration required — one paste</div>
+ <div class="hint">New tables missing (courses / payments / attendance / timeclock…). Run in Supabase SQL editor — project <b>baazubvfsrpmbfmrzumw</b> (check URL bar). Safe to re-run.</div>
+ <pre id="migPre">${esc(MIG_SQL)}</pre>
+ <button class="btn2" onclick="navigator.clipboard.writeText(document.getElementById('migPre').textContent).then(()=>toast('SQL copied'))"><i class="ti ti-copy"></i> Copy SQL</button>
+ <button class="btn2" style="margin-left:8px" onclick="location.reload()"><i class="ti ti-refresh"></i> I ran it — recheck</button></div>`;}
+
 function rCourses(){
-  const cat=CFG['courses.catalogue']||[];
+  if(!OPS.ok){$('tabBody').innerHTML=migCard();return;}
+  $('tabBody').innerHTML=`<div class="panel sect">
+   <div class="eb">Course catalogue · courses table <span class="chip live">live DB</span></div>
+   <table class="list"><thead><tr><th></th><th>Course</th><th>Structure</th><th>Days</th><th>MC</th><th>Duration</th><th>Fee ₹</th><th></th></tr></thead><tbody>
+   ${OPS.courses.map((c,i)=>`<tr style="${c.active?'':'opacity:.45'}">
+     <td>${c.active?'●':'○'}</td>
+     <td><b>${esc(c.name)}</b></td>
+     <td style="font-size:11px">${courseStruct(c)}</td>
+     <td style="font-size:10.5px;color:var(--steel)">${esc(c.default_days||'—')}</td>
+     <td>${esc(c.mc_day||'—')}</td>
+     <td>${c.duration_days}d</td>
+     <td>${(+c.fee).toLocaleString('en-IN')}</td>
+     <td style="text-align:right;white-space:nowrap">
+       <button class="btn2" onclick="editCourse(${i})"><i class="ti ti-pencil"></i></button>
+       <button class="btn-danger" onclick="delCourse(${i})"><i class="ti ti-trash"></i></button></td></tr>`).join('')}
+   </tbody></table>
+   <div style="margin-top:14px"><button class="btn" onclick="editCourse(-1)"><i class="ti ti-plus"></i> New course</button></div>
+   <div class="hint" style="margin-top:10px">Fee is defined on the course — each student's payment plan starts from it (Phase 2). Deactivating hides a course from the batch creator but keeps history intact.</div></div>`;
+}
+function editCourse(i){
+  const c=i<0?{name:'',total_group:0,total_mc:0,total_oneonone:0,total_sessions:0,duration_days:60,default_days:'Mon, Tue, Wed, Thu',mc_day:'Sat',fee:0,active:true}:OPS.courses[i];
+  const sel=(c.default_days||'').split(',').map(x=>x.trim());
+  openSheet(`<h2>${i<0?'New course':'Edit · '+esc(c.name)}</h2>
+   <div class="fld"><label>Name</label><input id="c_name" value="${esc(c.name)}"/></div>
+   <div class="grid2">
+    <div class="fld"><label>Group sessions (total)</label><input type="number" id="c_g" value="${c.total_group}"/></div>
+    <div class="fld"><label>Masterclasses (total)</label><input type="number" id="c_mc" value="${c.total_mc}"/></div>
+    <div class="fld"><label>One-on-ones (total)</label><input type="number" id="c_oo" value="${c.total_oneonone}"/></div>
+    <div class="fld"><label>OR flat session count (e.g. Speaking = 25; overrides above)</label><input type="number" id="c_ts" value="${c.total_sessions}"/></div>
+    <div class="fld"><label>Duration (days)</label><input type="number" id="c_dd" value="${c.duration_days}"/></div>
+    <div class="fld"><label>Course fee ₹</label><input type="number" id="c_fee" value="${c.fee}"/></div>
+   </div>
+   <div class="fld"><label>Default class days (changeable per batch)</label><div class="row" style="flex-wrap:wrap" id="c_days">${dayChips(sel)}</div></div>
+   <div class="fld"><label>Masterclass day</label><select id="c_mcd">${['','Sat','Sun','Fri'].map(d=>`<option value="${d}" ${d===(c.mc_day||'')?'selected':''}>${d||'None'}</option>`).join('')}</select></div>
+   <div class="fld"><label><input type="checkbox" id="c_act" ${c.active?'checked':''}/> Active</label></div>
+   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn2" onclick="closeSheet()">Cancel</button><button class="btn" onclick="saveCourse(${i})">Save</button></div>`);
+}
+async function saveCourse(i){
+  const rec={name:$('c_name').value.trim(),total_group:+$('c_g').value||0,total_mc:+$('c_mc').value||0,
+   total_oneonone:+$('c_oo').value||0,total_sessions:+$('c_ts').value||0,duration_days:+$('c_dd').value||60,
+   fee:+$('c_fee').value||0,default_days:pickDays('c_days'),mc_day:$('c_mcd').value||null,active:$('c_act').checked};
+  if(!rec.name)return toast('Name required.',true);
+  let error;
+  if(i<0)({error}=await DB.from('courses').insert(rec));
+  else ({error}=await DB.from('courses').update(rec).eq('id',OPS.courses[i].id));
+  if(error)return toast('DB error: '+error.message,true);
+  audit('course.save',rec.name,rec);closeSheet();toast('Saved — live for new batches.');await loadOps();rCourses();
+}
+async function delCourse(i){const c=OPS.courses[i];
+  if(!confirm(`Delete course "${c.name}"? Permanent.`))return;
+  const {error}=await DB.from('courses').delete().eq('id',c.id);
+  if(error)return toast('Batches reference this course — deactivate instead.',true);
+  audit('course.delete',c.name,null);await loadOps();rCourses();}
+
+/* ═══════════ TAB · BATCHES ═══════════ */
+function rBatches(){
+  if(!OPS.ok){$('tabBody').innerHTML=migCard();return;}
+  const act=OPS.batches.filter(b=>b.status!=='completed');
+  const hist=OPS.batches.filter(b=>b.status==='completed');
+  const done=b=>OPS.sessions.filter(x=>x.batch_id===b.id&&x.status==='done').length;
+  const tot=b=>{const c=OPS.courses.find(c=>c.id===b.course_id);return c?courseTotal(c):(+b.sessions_total||0);};
+  const tn=id=>OPS.trainers.find(t=>t.id===id)?.name||'—';
+  const cn=id=>OPS.courses.find(c=>c.id===id)?.name||'—';
+  const stu=b=>OPS.students.filter(x=>x.batch_id===b.id).length;
   $('tabBody').innerHTML=`
-  <div class="panel sect">
-    <div class="eb">Course catalogue ${badge('courses.catalogue')}</div>
-    <table class="list"><thead><tr><th>Active</th><th>Label</th><th>Slug</th><th>Group</th><th>Masterclass</th><th>1:1</th><th>Days</th><th></th></tr></thead>
-    <tbody id="crsBody">${cat.map((c,i)=>`<tr>
-      <td><input type="checkbox" data-i="${i}" data-f="active" ${c.active?'checked':''}/></td>
-      <td><input data-i="${i}" data-f="label" value="${esc(c.label)}" style="min-width:130px"/></td>
-      <td><input data-i="${i}" data-f="slug" value="${esc(c.slug)}" style="min-width:120px;color:var(--ghost)"/></td>
-      <td><input type="number" data-i="${i}" data-f="group" value="${c.group}" style="width:64px"/></td>
-      <td><input type="number" data-i="${i}" data-f="mc" value="${c.mc}" style="width:64px"/></td>
-      <td><input type="number" data-i="${i}" data-f="oneonone" value="${c.oneonone}" style="width:64px"/></td>
-      <td><input type="number" data-i="${i}" data-f="days" value="${c.days}" style="width:64px"/></td>
-      <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`).join('')}</tbody></table>
-    <div class="row" style="margin-top:14px">
-      <button class="btn2" onclick="addCourseRow()"><i class="ti ti-plus"></i> Add course</button>
-      <button class="btn" onclick="saveCourses()"><i class="ti ti-device-floppy"></i> Save catalogue</button>
-    </div>
-    <div class="hint" style="margin-top:10px">Structure math the dashboards use today: Foundation/Upgrade = 32 group + 8 masterclass + 2 one-on-one over 63 days; Elite ≈ 20 one-on-ones / 30 days. Edits here replace the hardcoded map once the wiring pass lands.</div>
+  <div class="panel sect"><div class="eb">Create batch under a course</div>
+   <div class="grid2"><div>
+    <div class="fld"><label>Batch name</label><input id="b_name" placeholder="BRK_06U Fluent Founders"/></div>
+    <div class="fld"><label>Course</label><select id="b_course" onchange="fillCourseDays()">${OPS.courses.filter(c=>c.active).map(c=>`<option value="${c.id}">${esc(c.name)} · ${courseStruct(c)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Trainer</label><select id="b_tr">${OPS.trainers.filter(t=>t.status==='active').map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='pt'?' (PT)':''}</option>`).join('')}</select></div>
+   </div><div>
+    <div class="fld"><label>Class days</label><div class="row" style="flex-wrap:wrap" id="b_days">${dayChips([])}</div></div>
+    <div class="fld"><label>Time slot</label><input id="b_time" placeholder="7:00 PM"/></div>
+    <div class="fld"><label>Capacity (blank = no cap)</label><input type="number" id="b_cap"/></div>
+   </div></div>
+   <button class="btn" onclick="createBatch()"><i class="ti ti-plus"></i> Create batch</button>
+   <div class="hint" style="margin-top:8px">MC day auto-appends from the course. Josephine adds students + schedules sessions in the Academics Portal (Phase 2 build).</div></div>
+  <div class="panel sect"><div class="eb">Active batches (${act.length})</div>
+   <table class="list"><thead><tr><th>Batch</th><th>Course</th><th>Trainer</th><th>Students</th><th>Progress</th><th></th></tr></thead><tbody>
+   ${act.map(b=>{const d=done(b),T=tot(b),pct=T?Math.round(d/T*100):0;
+    return `<tr><td><b>${esc(b.name)}</b><div style="font-size:9.5px;color:var(--ghost)">${esc(b.day_pattern||'')} · ${esc(b.time_slot||'')}</div></td>
+    <td style="font-size:11px">${esc(cn(b.course_id))}</td><td>${esc(tn(b.trainer_id))}</td><td>${stu(b)}${b.capacity?'/'+b.capacity:''}</td>
+    <td style="min-width:140px"><div style="height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--grad)"></div></div>
+    <div style="font-size:9px;color:var(--ghost);margin-top:3px">${d}/${T||'—'} · ${T?'confirmed from log':'no course link'}</div></td>
+    <td style="text-align:right"><button class="btn2" onclick="completeBatch('${b.id}')"><i class="ti ti-flag-check"></i> Complete</button></td></tr>`;}).join('')||'<tr><td colspan="6" style="color:var(--ghost);padding:14px">No active batches yet.</td></tr>'}
+   </tbody></table></div>
+  <div class="panel sect"><div class="eb">History · completed (${hist.length})</div>
+   ${hist.length?`<table class="list"><tbody>${hist.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td style="font-size:11px">${esc(cn(b.course_id))}</td><td>${esc(tn(b.trainer_id))}</td><td style="color:var(--ghost)">${b.completed_at?new Date(b.completed_at).toLocaleDateString('en-IN'):''}</td><td style="text-align:right"><button class="btn2" onclick="reopenBatch('${b.id}')">Reopen</button></td></tr>`).join('')}</tbody></table>`:'<div class="hint">Completed batches land here — hidden from founder deck, trainer views and active lists.</div>'}
   </div>`;
 }
-function addCourseRow(){
-  const tb=$('crsBody'),i=tb.children.length;
-  tb.insertAdjacentHTML('beforeend',`<tr>
-   <td><input type="checkbox" data-i="${i}" data-f="active" checked/></td>
-   <td><input data-i="${i}" data-f="label" value="" placeholder="Label" style="min-width:130px"/></td>
-   <td><input data-i="${i}" data-f="slug" value="" placeholder="slug-name" style="min-width:120px"/></td>
-   <td><input type="number" data-i="${i}" data-f="group" value="0" style="width:64px"/></td>
-   <td><input type="number" data-i="${i}" data-f="mc" value="0" style="width:64px"/></td>
-   <td><input type="number" data-i="${i}" data-f="oneonone" value="0" style="width:64px"/></td>
-   <td><input type="number" data-i="${i}" data-f="days" value="60" style="width:64px"/></td>
-   <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`);
+function fillCourseDays(){const c=OPS.courses.find(c=>c.id===$('b_course').value);if(!c)return;
+  const sel=(c.default_days||'').split(',').map(x=>x.trim());
+  document.querySelectorAll('#b_days .dchip').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.d)));}
+async function createBatch(){
+  const name=$('b_name').value.trim();if(!name)return toast('Batch name required.',true);
+  const c=OPS.courses.find(c=>c.id===$('b_course').value);
+  const days=pickDays('b_days');
+  const rec={name,course_id:$('b_course').value||null,trainer_id:$('b_tr').value||null,
+    day_pattern:days+(c&&c.mc_day?' · MC '+c.mc_day:''),time_slot:$('b_time').value.trim()||null,
+    capacity:+$('b_cap').value||null,status:'active',
+    batch_type:c?c.name.toLowerCase().replace(/\s+/g,'-'):null,
+    sessions_total:c&&+c.total_sessions>0?+c.total_sessions:null};
+  const {error}=await DB.from('batches').insert(rec);
+  if(error)return toast('DB error: '+error.message,true);
+  audit('batch.create',name,rec);toast('Batch created — live.');await loadOps();rBatches();
 }
-function saveCourses(){
-  const rows=[...$('crsBody').children].map(tr=>{
-    const g=f=>tr.querySelector(`[data-f=${f}]`);
-    return {slug:g('slug').value.trim(),label:g('label').value.trim(),active:g('active').checked,
-      group:+g('group').value||0,mc:+g('mc').value||0,oneonone:+g('oneonone').value||0,days:+g('days').value||0};
-  }).filter(c=>c.slug&&c.label);
-  if(!rows.length)return toast('Catalogue can\'t be empty.',true);
-  saveCfg('courses.catalogue',rows);
+async function completeBatch(id){
+  const b=OPS.batches.find(x=>x.id===id);
+  if(!confirm(`Mark "${b.name}" completed? It disappears from active dashboards (kept in History).`))return;
+  const {error}=await DB.from('batches').update({status:'completed',completed_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast('DB error: '+error.message,true);
+  audit('batch.complete',b.name,null);toast('Moved to history.');await loadOps();rBatches();
+}
+async function reopenBatch(id){
+  const {error}=await DB.from('batches').update({status:'active',completed_at:null}).eq('id',id);
+  if(error)return toast('DB error: '+error.message,true);
+  await loadOps();rBatches();}
+
+/* trainer manager (Identity tab) */
+function editTrainer(i){
+  const t=i<0?{name:'',type:'ft',status:'active'}:OPS.trainers[i];
+  const slots=i<0?[]:OPS.slots.filter(x=>x.trainer_id===t.id);
+  openSheet(`<h2>${i<0?'Add trainer':'Edit · '+esc(t.name)}</h2>
+  <div class="fld"><label>Name</label><input id="t_name" value="${esc(t.name)}"/></div>
+  <div class="grid2">
+   <div class="fld"><label>Type</label><select id="t_type" onchange="$('ftBox').style.display=this.value==='ft'?'':'none';$('ptBox').style.display=this.value==='pt'?'':'none'">
+     <option value="ft" ${t.type!=='pt'?'selected':''}>Full-time</option><option value="pt" ${t.type==='pt'?'selected':''}>Part-time</option></select></div>
+   <div class="fld"><label>Status</label><select id="t_status"><option ${t.status!=='inactive'?'selected':''}>active</option><option ${t.status==='inactive'?'selected':''}>inactive</option></select></div>
+  </div>
+  <div id="ftBox" style="display:${t.type==='pt'?'none':''}">
+   <div class="grid2">
+    <div class="fld"><label>Work start</label><input id="t_ws" value="${esc(t.work_start||'')}" placeholder="10:00 AM"/></div>
+    <div class="fld"><label>Work end</label><input id="t_we" value="${esc(t.work_end||'')}" placeholder="7:00 PM"/></div>
+   </div>
+   <div class="fld"><label>Weekly hours — overtime = clocked hours above this (Phase 3)</label><input type="number" id="t_wh" value="${t.weekly_hours||''}"/></div>
+  </div>
+  <div id="ptBox" style="display:${t.type==='pt'?'':'none'}">
+   <div class="eb" style="margin-bottom:8px">Available slots · free ones feed the sales slot board</div>
+   <table class="list"><tbody id="slotBody">${slots.map(slotRow).join('')}</tbody></table>
+   <button class="btn2" style="margin-top:8px" onclick="$('slotBody').insertAdjacentHTML('beforeend',slotRow({}))"><i class="ti ti-plus"></i> Add slot</button>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn2" onclick="closeSheet()">Cancel</button><button class="btn" onclick="saveTrainer(${i})">Save</button></div>`);
+}
+function slotRow(sl){return `<tr>
+ <td><select data-f="wd" style="min-width:70px">${DAYS.map(d=>`<option ${d===(sl.weekday||'Mon')?'selected':''}>${d}</option>`).join('')}</select></td>
+ <td><input data-f="st" value="${esc(sl.start_time||'')}" placeholder="6 PM" style="width:76px"/></td>
+ <td><input data-f="en" value="${esc(sl.end_time||'')}" placeholder="7 PM" style="width:76px"/></td>
+ <td><label style="font-size:10px;white-space:nowrap"><input type="checkbox" data-f="bk" ${sl.booked?'checked':''}/> booked</label></td>
+ <td><input data-f="ch" value="${esc(sl.course_hint||'')}" placeholder="course" style="width:90px"/></td>
+ <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`;}
+async function saveTrainer(i){
+  const rec={name:$('t_name').value.trim(),type:$('t_type').value,status:$('t_status').value,
+   work_start:$('t_ws').value.trim()||null,work_end:$('t_we').value.trim()||null,weekly_hours:+$('t_wh').value||null};
+  if(!rec.name)return toast('Name required.',true);
+  let id=i<0?null:OPS.trainers[i].id,error;
+  if(i<0){const r=await DB.from('trainers').insert({...rec,added_by:ME.username}).select().single();error=r.error;id=r.data?.id;}
+  else ({error}=await DB.from('trainers').update(rec).eq('id',id));
+  if(error)return toast('DB error: '+error.message,true);
+  if(rec.type==='pt'&&id){
+    const rows=[...document.querySelectorAll('#slotBody tr')].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
+      return {trainer_id:id,weekday:g('wd').value,start_time:g('st').value.trim(),end_time:g('en').value.trim(),booked:g('bk').checked,course_hint:g('ch').value.trim()||null};})
+      .filter(x=>x.start_time&&x.end_time);
+    await DB.from('trainer_slots').delete().eq('trainer_id',id);
+    if(rows.length){const {error:e2}=await DB.from('trainer_slots').insert(rows);if(e2)return toast('Slots error: '+e2.message,true);}
+  }
+  audit('trainer.save',rec.name,rec);closeSheet();toast('Saved — live.');await loadOps();rTeam();
 }
 
 /* ═══════════ TAB 3 · DATA SOURCES ═══════════ */
