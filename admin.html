@@ -374,6 +374,19 @@ create table if not exists courses(
   active boolean default true,
   created_at timestamptz default now());
 
+-- If a courses table already existed (older build), add any missing columns:
+alter table courses add column if not exists name text;
+alter table courses add column if not exists total_group int default 0;
+alter table courses add column if not exists total_mc int default 0;
+alter table courses add column if not exists total_oneonone int default 0;
+alter table courses add column if not exists total_sessions int default 0;
+alter table courses add column if not exists duration_days int default 60;
+alter table courses add column if not exists default_days text default 'Mon, Tue, Wed, Thu';
+alter table courses add column if not exists mc_day text default 'Sat';
+alter table courses add column if not exists fee numeric default 0;
+alter table courses add column if not exists active boolean default true;
+alter table courses add column if not exists created_at timestamptz default now();
+
 -- ── Batches: lifecycle + course link ──
 alter table batches drop constraint if exists batches_batch_type_check;
 alter table batches add column if not exists sessions_total int;
