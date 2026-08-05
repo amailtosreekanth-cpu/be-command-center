@@ -661,7 +661,7 @@ function editTrainer(i){
   openSheet(`<h2>${i<0?'Add trainer':'Edit · '+esc(t.name)}</h2>
   <div class="fld"><label>Name</label><input id="t_name" value="${esc(t.name)}"/></div>
   <div class="grid2">
-   <div class="fld"><label>Type</label><select id="t_type" onchange="$('ftBox').style.display=this.value==='ft'?'':'none';$('ptBox').style.display=this.value==='pt'?'':'none'">
+   <div class="fld"><label>Type</label><select id="t_type" onchange="$('ftBox').style.display=this.value==='ft'?'':'none'">
      <option value="ft" ${t.type!=='pt'?'selected':''}>Full-time</option><option value="pt" ${t.type==='pt'?'selected':''}>Part-time</option></select></div>
    <div class="fld"><label>Status</label><select id="t_status"><option ${t.status!=='inactive'?'selected':''}>active</option><option ${t.status==='inactive'?'selected':''}>inactive</option></select></div>
   </div>
@@ -672,8 +672,8 @@ function editTrainer(i){
    </div>
    <div class="fld"><label>Weekly hours — overtime = clocked hours above this (Phase 3)</label><input type="number" id="t_wh" value="${t.weekly_hours||''}"/></div>
   </div>
-  <div id="ptBox" style="display:${t.type==='pt'?'':'none'}">
-   <div class="eb" style="margin-bottom:8px">Available slots · free ones feed the sales slot board</div>
+  <div id="ptBox">
+   <div class="eb" style="margin-bottom:8px">Weekly time slots · free ○ feed the sales slot board (works for FT and PT)</div>
    <table class="list"><tbody id="slotBody">${slots.map(slotRow).join('')}</tbody></table>
    <button class="btn2" style="margin-top:8px" onclick="$('slotBody').insertAdjacentHTML('beforeend',slotRow({}))"><i class="ti ti-plus"></i> Add slot</button>
   </div>
@@ -694,7 +694,7 @@ async function saveTrainer(i){
   if(i<0){const r=await DB.from('trainers').insert({...rec,added_by:ME.username}).select().single();error=r.error;id=r.data?.id;}
   else ({error}=await DB.from('trainers').update(rec).eq('id',id));
   if(error)return toast('DB error: '+error.message,true);
-  if(rec.type==='pt'&&id){
+  if(id){
     const rows=[...document.querySelectorAll('#slotBody tr')].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
       return {trainer_id:id,weekday:g('wd').value,start_time:g('st').value.trim(),end_time:g('en').value.trim(),booked:g('bk').checked,course_hint:g('ch').value.trim()||null};})
       .filter(x=>x.start_time&&x.end_time);
