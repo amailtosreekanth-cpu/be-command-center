@@ -130,8 +130,14 @@ details[open] .rawsum::before{content:'▾ '}
         <tbody id="trainerTable"></tbody></table>
     </div>
     <div class="section">
+      <h2>Courses <button onclick="openCourse()">+ Define Course</button></h2>
+      <div class="mhint" style="margin-bottom:12px">Define once, reuse for every batch. Sessions, duration, capacity and default days — all editable anytime, even midway through a running course.</div>
+      <table><thead><tr><th>Course</th><th>Type</th><th>Sessions</th><th>Duration</th><th>Capacity</th><th>Default Days</th><th>Actions</th></tr></thead>
+        <tbody id="courseTable"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody></table>
+    </div>
+    <div class="section">
       <h2>Batches <button onclick="openModal('batch')">+ Create Batch</button></h2>
-      <table><thead><tr><th>Name</th><th>Trainer</th><th>Schedule</th><th>Type</th><th>Actions</th></tr></thead>
+      <table><thead><tr><th>Name</th><th>Trainer</th><th>Schedule</th><th>Course</th><th>Students</th><th>Actions</th></tr></thead>
         <tbody id="batchTable"></tbody></table>
     </div>
     <div class="section">
@@ -184,24 +190,43 @@ details[open] .rawsum::before{content:'▾ '}
   <h3>Create Batch</h3>
   <input id="m_b_name" placeholder="Batch name (e.g. Phrase Factory)"/>
   <select id="m_b_trainer"></select>
-  <select id="m_b_type" onchange="typeChanged()">
-    <option value="group-foundation">Group · Foundation</option>
-    <option value="group-upgrade">Group · Upgrade</option>
-    <option value="elite-oneonone">Elite · One-on-One (20 sessions)</option>
-    <option value="custom-elite">Customized Elite (flexible sessions)</option>
-    <option value="ielts-group">IELTS · Group</option>
-    <option value="ielts-oneonone">IELTS · One-on-One</option>
-    <option value="recorded" disabled>Recorded Course — separate dashboard, coming</option>
-  </select>
-  <div class="mhint" id="m_b_hint">32 group classes · 8 masterclasses · 2 one-on-ones over 2 months</div>
+  <select id="m_b_type" onchange="typeChanged()"></select>
+  <div class="mhint" id="m_b_hint">Pick a course — its sessions, days and capacity prefill below.</div>
   <div class="daychips" id="m_b_days"></div>
-  <div class="mhint">Tap class days. Masterclass day is separate below.</div>
+  <div class="mhint">Class days prefill from the course — tap to change per batch, even midway.</div>
   <div class="mrow">
     <select id="m_b_mc"><option value="Sat">MC · Saturday</option><option value="Sun">MC · Sunday</option><option value="Fri">MC · Friday</option><option value="">No masterclass</option></select>
     <input id="m_b_time" placeholder="Time · e.g. 8:00–9:00 PM"/>
   </div>
-  <input id="m_b_sessions" type="number" placeholder="Total sessions" style="display:none"/>
+  <div class="mrow">
+    <input id="m_b_sessions" type="number" placeholder="Total sessions"/>
+    <input id="m_b_cap" type="number" placeholder="Max students"/>
+  </div>
+  <input id="m_b_start" type="date" title="Batch start date (optional)"/>
+  <div class="mhint">Start below capacity if you like — you can add more students anytime.</div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batch')">Cancel</button><button class="btn-save" onclick="saveBatch()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modalCourse"><div class="modal" style="width:460px">
+  <h3 id="course_title">Define Course</h3>
+  <input id="c_name" placeholder="Course name (e.g. Foundation) *"/>
+  <div class="mrow">
+    <select id="c_type" onchange="courseTypeChanged()"><option value="group">Group cohort</option><option value="one-on-one">One-on-one</option></select>
+    <input id="c_code" placeholder="Short code (e.g. FND)"/>
+  </div>
+  <div class="mrow">
+    <input id="c_sessions" type="number" placeholder="Total sessions *"/>
+    <input id="c_duration" type="number" placeholder="Duration (days)"/>
+  </div>
+  <div class="mrow">
+    <input id="c_cap" type="number" placeholder="Max students (group)"/>
+    <input id="c_fee" type="number" placeholder="Fee ₹"/>
+  </div>
+  <div class="subhead" style="margin:10px 0 8px">Default class days</div>
+  <div class="daychips" id="c_days"></div>
+  <select id="c_mc"><option value="Sat">MC · Saturday</option><option value="Sun">MC · Sunday</option><option value="Fri">MC · Friday</option><option value="">No masterclass</option></select>
+  <div class="mhint">Defaults only — every batch prefills from these and can override them, even midway.</div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('course')">Cancel</button><button class="btn-save" onclick="saveCourse()">Save Course</button></div>
 </div></div>
 
 <div class="modal-bg" id="modalAssignment"><div class="modal">
@@ -311,9 +336,8 @@ async function doLogin(){
 function logout(){
   try{localStorage.removeItem('be_session');}catch(_){}
   currentUser = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login').style.display = 'flex';
-  document.getElementById('lu').value=''; document.getElementById('lp').value='';
+  /* full reload guarantees no admin DOM / role state leaks into the next login in this tab */
+  location.reload();
 }
 
 async function loadLive(){
@@ -413,6 +437,12 @@ async function boot(){
   document.getElementById('greeting').textContent = 'Welcome, ' + currentUser.name;
   document.getElementById('rolepill').textContent = currentUser.role.replace('_',' ');
 
+  /* HARD GATE: strip all admin markup from the DOM for non-heads (not just hide it) */
+  if (currentUser.role !== 'founder' && currentUser.role !== 'academic_head') {
+    const hv=document.getElementById('headView'); if(hv)hv.remove();
+    const asb=document.getElementById('addStuBtn'); if(asb)asb.remove();
+  }
+
   if (currentUser.role === 'founder' || currentUser.role === 'academic_head') {
     document.getElementById('headView').style.display = 'block';
     await loadHeadView();
@@ -462,11 +492,17 @@ async function loadHeadView(){
     <td><button class="act-btn" onclick="deleteTrainer('${t.id}','${esc(t.name)}')" style="border-color:rgba(237,31,81,.4);color:var(--k1)">Delete</button></td></tr>
   `).join('') || '<tr><td colspan="4" class="empty">No trainers yet</td></tr>';
 
-  const { data: batches } = await sb.from('batches').select('*, trainers(name)').order('created_at');
-  document.getElementById('batchTable').innerHTML = (batches||[]).map(b => `
-    <tr><td>${b.name}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td><td>${courseLabel(b.batch_type)}${b.sessions_total?' · '+b.sessions_total+' sessions':''}</td>
-    <td><button class="act-btn" onclick="deleteBatch('${b.id}')">Delete</button></td></tr>
-  `).join('') || '<tr><td colspan="5" class="empty">No batches yet</td></tr>';
+  const { data: batches } = await sb.from('batches').select('*, trainers(name), courses(name), students(id)').order('created_at');
+  document.getElementById('batchTable').innerHTML = (batches||[]).map(b => {
+    const cn=b.courses?.name||courseLabel(b.batch_type);
+    const n=(b.students?b.students.length:0), cap=b.capacity;
+    const seats=cap?`${n}/${cap}`:`${n}`;
+    const seatCol=(cap&&n>=cap)?'var(--yellow)':'var(--tx2)';
+    return `<tr><td>${esc(b.name)}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td>
+    <td>${esc(cn)}${b.sessions_total?' · '+b.sessions_total+'s':''}</td>
+    <td style="color:${seatCol}">${seats}</td>
+    <td><button class="act-btn" onclick="deleteBatch('${b.id}')">Delete</button></td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty">No batches yet</td></tr>';
 
   const { data: assigns } = await sb.from('assignments').select('*, trainers(name)').order('created_at',{ascending:false});
   document.getElementById('assignTable').innerHTML = (assigns||[]).map(a => `
@@ -474,6 +510,7 @@ async function loadHeadView(){
   `).join('') || '<tr><td colspan="4" class="empty">No tasks assigned</td></tr>';
 
   await populateTrainerSelects();
+  await loadCourses();
 }
 
 async function loadTrainerView(){
@@ -534,44 +571,132 @@ async function deleteTrainer(id, name){
 }
 function esc(s){return String(s??'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));}
 
-const COURSES={
-  'group-foundation':{label:'Group Foundation',hint:'32 group classes · 8 masterclasses · 2 one-on-ones over 2 months',fixed:true},
-  'group-upgrade':{label:'Group Upgrade',hint:'32 group classes · 8 masterclasses · 2 one-on-ones over 2 months',fixed:true},
-  'elite-oneonone':{label:'Elite 1:1',hint:'20 one-on-one sessions · ~1 month',sessions:20,locked:true},
-  'custom-elite':{label:'Customized Elite',hint:'Session count set per student requirement',sessions:20},
-  'ielts-group':{label:'IELTS Group',hint:'Set total sessions for this IELTS group batch',sessions:24},
-  'ielts-oneonone':{label:'IELTS 1:1',hint:'Set total one-on-one sessions',sessions:12},
-  'group':{label:'Group (legacy)'},'one-on-one':{label:'1:1 (legacy)'},'elite':{label:'Elite (legacy)'}
-};
-const courseLabel=t=>COURSES[t]?.label||t||'—';
+/* ── Courses are defined by the Academic Head in the DB, not hardcoded ── */
+let COURSE_ROWS=[]; const courseById={};
+/* legacy batch_type strings (old batches) → readable label, back-compat only */
+const LEGACY_LABEL={'group-foundation':'Group Foundation','group-upgrade':'Group Upgrade','elite-oneonone':'Elite 1:1','custom-elite':'Customized Elite','ielts-group':'IELTS Group','ielts-oneonone':'IELTS 1:1','group':'Group','one-on-one':'1:1','elite':'Elite'};
+const courseLabel=t=>LEGACY_LABEL[t]||t||'—';
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+async function loadCourses(){
+  const {data,error}=await sb.from('courses').select('*').order('name');
+  if(error){console.warn('courses load failed',error.message);return;}
+  COURSE_ROWS=data||[]; for(const k in courseById)delete courseById[k];
+  COURSE_ROWS.forEach(c=>courseById[c.id]=c);
+  renderCourseTable(); populateCourseSelect();
+}
+function renderCourseTable(){
+  const el=document.getElementById('courseTable'); if(!el)return;
+  el.innerHTML=COURSE_ROWS.map(c=>`
+    <tr><td>${esc(c.name)}${c.active===false?' <span class="badge b-inactive">off</span>':''}</td>
+    <td>${c.type==='one-on-one'?'1:1':'Group'}</td>
+    <td>${c.sessions_total||'—'}</td>
+    <td>${c.duration_days?c.duration_days+'d':'—'}</td>
+    <td>${c.type==='one-on-one'?'1':(c.max_students||'—')}</td>
+    <td>${esc(c.default_days||'—')}${c.mc_day?' · MC '+esc(c.mc_day):''}</td>
+    <td><button class="act-btn" onclick="openCourse('${c.id}')">Edit</button>
+    <button class="act-btn" onclick="toggleCourse('${c.id}')">${c.active===false?'Enable':'Disable'}</button></td></tr>
+  `).join('')||'<tr><td colspan="7" class="empty">No courses yet — define your first course.</td></tr>';
+}
+function populateCourseSelect(){
+  const sel=document.getElementById('m_b_type'); if(!sel)return;
+  const live=COURSE_ROWS.filter(c=>c.active!==false);
+  sel.innerHTML=live.map(c=>`<option value="${c.id}">${esc(c.name)}${c.type==='one-on-one'?' · 1:1':''}</option>`).join('')
+    ||'<option value="">No courses yet — define one first</option>';
+}
+function courseTypeChanged(){
+  const oneone=document.getElementById('c_type').value==='one-on-one';
+  const cap=document.getElementById('c_cap');
+  cap.disabled=oneone; cap.placeholder=oneone?'1 (one-on-one)':'Max students (group)'; if(oneone)cap.value='';
+}
+let _editCourse=null;
+function openCourse(id){
+  if(!requireHeadAccess())return;
+  _editCourse=id?courseById[id]:null; const c=_editCourse||{};
+  document.getElementById('course_title').textContent=_editCourse?'Edit Course':'Define Course';
+  document.getElementById('c_name').value=c.name||'';
+  document.getElementById('c_code').value=c.code||'';
+  document.getElementById('c_type').value=c.type==='one-on-one'?'one-on-one':'group';
+  document.getElementById('c_sessions').value=c.sessions_total||'';
+  document.getElementById('c_duration').value=c.duration_days||'';
+  document.getElementById('c_cap').value=(c.type==='one-on-one')?'':(c.max_students||'');
+  document.getElementById('c_fee').value=c.fee||'';
+  document.getElementById('c_mc').value=(c.mc_day!=null)?c.mc_day:'Sat';
+  const box=document.getElementById('c_days');
+  if(!box.children.length)box.innerHTML=DAYS.map(d=>`<span class="dchip" data-d="${d}" onclick="this.classList.toggle('on')">${d}</span>`).join('');
+  const def=(c.default_days||'').split(/[,\s]+/).filter(Boolean);
+  box.querySelectorAll('.dchip').forEach(ch=>ch.classList.toggle('on',def.includes(ch.dataset.d)));
+  courseTypeChanged();
+  document.getElementById('modalCourse').classList.add('on');
+}
+async function saveCourse(){
+  if(!requireHeadAccess())return;
+  const name=document.getElementById('c_name').value.trim();
+  if(!name){alert('Course name required');return;}
+  const type=document.getElementById('c_type').value;
+  const days=[...document.querySelectorAll('#c_days .dchip.on')].map(x=>x.dataset.d).join(', ');
+  const rec={name,
+    code:document.getElementById('c_code').value.trim()||null,
+    type,
+    sessions_total:parseInt(document.getElementById('c_sessions').value)||null,
+    duration_days:parseInt(document.getElementById('c_duration').value)||null,
+    max_students:type==='one-on-one'?1:(parseInt(document.getElementById('c_cap').value)||null),
+    fee:parseFloat(document.getElementById('c_fee').value)||null,
+    default_days:days||null,
+    mc_day:document.getElementById('c_mc').value||null};
+  let error;
+  if(_editCourse&&_editCourse.id){({error}=await sb.from('courses').update(rec).eq('id',_editCourse.id));}
+  else{rec.active=true;({error}=await sb.from('courses').insert(rec));}
+  if(error){alert('Save failed: '+error.message);return;}
+  closeModal('course'); await loadCourses();
+}
+async function toggleCourse(id){
+  if(!requireHeadAccess())return;
+  const c=courseById[id]; if(!c)return;
+  const {error}=await sb.from('courses').update({active:c.active===false}).eq('id',id);
+  if(error){alert('Save failed: '+error.message);return;}
+  await loadCourses();
+}
 function buildDayChips(){
   const box=document.getElementById('m_b_days');
   if(box && !box.children.length) box.innerHTML=DAYS.map(d=>`<span class="dchip" data-d="${d}" onclick="this.classList.toggle('on')">${d}</span>`).join('');
 }
 function typeChanged(){
-  const t=document.getElementById('m_b_type').value, c=COURSES[t]||{};
-  document.getElementById('m_b_hint').textContent=c.hint||'';
+  const c=courseById[document.getElementById('m_b_type').value];
+  const hint=document.getElementById('m_b_hint');
   const sess=document.getElementById('m_b_sessions');
-  if(c.fixed){sess.style.display='none';sess.value='';}
-  else{sess.style.display='block';sess.value=c.sessions||'';sess.disabled=!!c.locked;}
+  const cap=document.getElementById('m_b_cap');
+  const mc=document.getElementById('m_b_mc');
+  if(!c){hint.textContent='Define a course first — batches are built from courses.';return;}
+  hint.textContent=(c.sessions_total?c.sessions_total+' sessions':'')
+    +(c.duration_days?' · '+c.duration_days+' days':'')
+    +(c.type==='one-on-one'?' · 1:1':(c.max_students?' · up to '+c.max_students+' students':''));
+  sess.value=c.sessions_total||'';
+  cap.value=(c.type==='one-on-one')?1:(c.max_students||'');
+  const def=(c.default_days||'').split(/[,\s]+/).filter(Boolean);
+  document.querySelectorAll('#m_b_days .dchip').forEach(ch=>ch.classList.toggle('on',def.includes(ch.dataset.d)));
+  if(c.mc_day!=null)mc.value=c.mc_day;
 }
 async function saveBatch(){
   if (!requireHeadAccess()) return;
   const name = document.getElementById('m_b_name').value.trim();
-  const trainer_id = document.getElementById('m_b_trainer').value;
-  const batch_type = document.getElementById('m_b_type').value;
+  const trainer_id = document.getElementById('m_b_trainer').value||null;
+  const course_id = document.getElementById('m_b_type').value||null;
+  const c = courseById[course_id];
   const days=[...document.querySelectorAll('#m_b_days .dchip.on')].map(x=>x.dataset.d);
   const mc=document.getElementById('m_b_mc').value;
   const time_slot=document.getElementById('m_b_time').value.trim();
-  const sessEl=document.getElementById('m_b_sessions');
-  const sessions_total=(COURSES[batch_type]?.fixed)?null:(parseInt(sessEl.value)||COURSES[batch_type]?.sessions||null);
+  const sessions_total=parseInt(document.getElementById('m_b_sessions').value)||(c?c.sessions_total:null)||null;
+  const capacity=parseInt(document.getElementById('m_b_cap').value)||(c?c.max_students:null)||null;
+  const start_date=document.getElementById('m_b_start').value||null;
   if(!name){alert('Batch needs a name.');return;}
+  if(!course_id){alert('Pick a course. Define one in the Courses section first.');return;}
   if(!days.length){alert('Pick at least one class day.');return;}
   const day_pattern=days.join(', ')+(mc?` · MC ${mc}`:'');
-  const {error}=await sb.from('batches').insert({ name, trainer_id, day_pattern, time_slot, batch_type, sessions_total });
-  if(error){alert('Save failed: '+error.message+'\n\nIf it mentions "batch_type" or "sessions_total" — run the one-time migration SQL (in the founder chat) in Supabase, then retry.');return;}
-  closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_time').value='';
+  const rec={ name, trainer_id, course_id, day_pattern, time_slot, sessions_total, capacity, start_date, batch_type:(c?(c.code||c.name):null), status:'active' };
+  const {error}=await sb.from('batches').insert(rec);
+  if(error){alert('Save failed: '+error.message);return;}
+  closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_time').value=''; document.getElementById('m_b_start').value='';
   document.querySelectorAll('#m_b_days .dchip.on').forEach(x=>x.classList.remove('on'));
   await loadHeadView(); await loadStats();
 }
@@ -650,7 +775,19 @@ async function saveStudent(){
   const g=function(id){return document.getElementById(id).value.trim();};
   const name=g('s_name');if(!name){alert('Name required');return;}
   const uin=g('s_uin')||('BE'+String(Date.now()).slice(-6));
-  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:g('s_batch')||null,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null};
+  const batchName=g('s_batch')||null;
+  let batch_id=null;
+  if(batchName){
+    const {data:bx}=await sb.from('batches').select('id,capacity,trainer_id,trainers(name)').eq('name',batchName).maybeSingle();
+    if(bx){
+      batch_id=bx.id;
+      if(bx.capacity){
+        const {count}=await sb.from('students').select('id',{count:'exact',head:true}).eq('batch_name',batchName);
+        if((count||0)>=bx.capacity && !confirm('Batch "'+batchName+'" is at capacity ('+count+'/'+bx.capacity+'). Add anyway?'))return;
+      }
+    }
+  }
+  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:batchName,batch_id:batch_id,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null};
   const {data,error}=await sb.from('students').insert(rec).select().single();
   if(error){alert('Save failed: '+error.message);return;}
   const fee=parseFloat(g('s_fee'))||0;
