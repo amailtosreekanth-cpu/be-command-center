@@ -86,6 +86,8 @@ h1,h2,h3{font-family:Montserrat,sans-serif}
 .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .clock{font-family:Barlow,sans-serif;font-weight:600;font-size:11px;letter-spacing:.08em;color:var(--steel);text-transform:uppercase;text-align:right;line-height:1.5}
+.presence{font-size:10px;color:var(--steel);padding:2px 14px 8px;display:flex;gap:14px;flex-wrap:wrap;text-transform:uppercase;letter-spacing:.06em}
+.presence i{margin-right:3px}
 .ai-chip{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1px solid rgba(var(--thr),.35);color:rgb(var(--thr));background:rgba(var(--thr),.07);font-family:Barlow,sans-serif;font-weight:600;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 
 /* ══ PAGES + THEMES ══ */
@@ -348,6 +350,8 @@ pre.sql{background:#07080c;border:1px solid rgba(var(--thr),.25);border-radius:1
       <div class="fb">SR</div>
       <div><div class="n" id="uName">—</div><div class="r">CEO · Omega Access</div></div>
     </div>
+    <button class="sb-out" id="clockBtn" onclick="clockToggle()" style="display:none"><i class="ti ti-clock"></i>Clock In</button>
+    <div id="presence" class="presence" hidden></div>
     <button class="sb-out" onclick="signOut()"><i class="ti ti-logout"></i>Sign out</button>
   </nav>
 
@@ -715,8 +719,40 @@ function boot(){
       .then(({data})=>{if(data&&data.value&&data.value[key]){img.src=data.value[key];img.style.display='';fb.style.display='none';}},()=>{});
   })();
   tick();setInterval(tick,1000);
+  initClock();loadPresence();
   initGlobe();
   Promise.allSettled([loadMaster(),loadAssess(),loadAcad(),loadMedia(),loadProjects()]).then(()=>{renderDeck();buildBriefing();});
+}
+/* ── self clock-in/out (own attendance) + founder presence read ── */
+let _fClock=null;
+async function initClock(){
+  try{
+    const {data}=await acadDB.from('timeclock').select('*').eq('username',founder.username).is('clock_out',null).order('clock_in',{ascending:false}).limit(1);
+    _fClock=(data&&data[0])||null;
+    const b=$('clockBtn');if(!b)return;b.style.display='';
+    b.innerHTML='<i class="ti ti-clock"></i>'+(_fClock?('Clock Out · in '+new Date(_fClock.clock_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})):'Clock In');
+  }catch(e){}
+}
+async function clockToggle(){
+  try{
+    if(_fClock)await acadDB.from('timeclock').update({clock_out:new Date().toISOString()}).eq('id',_fClock.id);
+    else await acadDB.from('timeclock').insert({username:founder.username});
+    await initClock();loadPresence();
+  }catch(e){alert('Clock failed — run the Phase 1 migration.');}
+}
+async function loadPresence(){
+  const el=$('presence');if(!el)return;
+  try{
+    const today=new Date();today.setHours(0,0,0,0);const d=new Date().toISOString().slice(0,10);
+    const r1=await acadDB.from('timeclock').select('username').gte('clock_in',today.toISOString());
+    const r2=await acadDB.from('leaves').select('username').lte('from_date',d).gte('to_date',d);
+    const r3=await acadDB.from('roles').select('username');
+    const present=new Set((r1.data||[]).map(x=>x.username)).size;
+    const total=(r3.data||[]).length||0;
+    const onLeave=new Set((r2.data||[]).map(x=>x.username)).size;
+    el.hidden=false;
+    el.innerHTML='<span><i class="ti ti-user-check" style="color:var(--ok)"></i>'+present+'/'+total+' present</span>'+(onLeave?'<span style="color:var(--warn)"><i class="ti ti-plane-departure"></i>'+onLeave+' on leave</span>':'');
+  }catch(e){}
 }
 function tick(){
   const n=new Date();

@@ -54,6 +54,7 @@ input,select,textarea{background:#0d1016;border:1px solid var(--ln);color:#fff;b
       <div><div class="eb">Sales Portal</div><div id="who" style="font-weight:600"></div></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="onLeave" class="chip" style="display:none"></span>
       <span id="clockState" class="chip">—</span>
       <button id="clockBtn" class="btn sm" onclick="toggleClock()">Clock In</button>
       <button class="btn g sm" onclick="markLeave()">Mark Leave</button>
@@ -160,48 +161,59 @@ async function start(){
 
 /* ---------- CLOCK IN / OUT ---------- */
 async function loadClock(){
-  const {data}=await sb.from('staff_attendance').select('*').eq('username',ME.username).eq('work_date',today()).maybeSingle();
-  CLOCK=data||null;paintClock();
+  const {data}=await sb.from('timeclock').select('*').eq('username',ME.username).is('clock_out',null).order('clock_in',{ascending:false}).limit(1);
+  CLOCK=(data&&data[0])||null;paintClock();loadOnLeave();
 }
 function paintClock(){
   const st=$('clockState'),b=$('clockBtn');
-  if(!CLOCK||!CLOCK.clock_in){st.innerHTML='<span class="dot" style="background:#555"></span>Not clocked in';st.className='chip';b.textContent='Clock In';b.classList.remove('g');}
-  else if(!CLOCK.clock_out){const t=new Date(CLOCK.clock_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});st.innerHTML='<span class="dot" style="background:var(--ok)"></span>In since '+t;st.className='chip ok';b.textContent='Clock Out';}
-  else{const m=CLOCK.minutes||0;st.innerHTML='<span class="dot" style="background:#555"></span>Done · '+Math.floor(m/60)+'h '+(m%60)+'m';st.className='chip';b.textContent='Clocked Out';}
+  if(!CLOCK){st.innerHTML='<span class="dot" style="background:#555"></span>Not clocked in';st.className='chip';b.textContent='Clock In';b.classList.remove('g');}
+  else{const t=new Date(CLOCK.clock_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});st.innerHTML='<span class="dot" style="background:var(--ok)"></span>In since '+t;st.className='chip ok';b.textContent='Clock Out';}
 }
 async function toggleClock(){
-  const now=new Date().toISOString();
-  if(!CLOCK||!CLOCK.clock_in){
-    const {error}=await sb.from('staff_attendance').upsert({username:ME.username,name:ME.name,role:ME.role,work_date:today(),clock_in:now},{onConflict:'username,work_date'});
+  if(!CLOCK){
+    const {error}=await sb.from('timeclock').insert({username:ME.username});
     if(error)return alert('Clock-in failed: '+error.message);
-  }else if(!CLOCK.clock_out){
-    const mins=Math.round((Date.now()-new Date(CLOCK.clock_in).getTime())/60000);
-    const {error}=await sb.from('staff_attendance').update({clock_out:now,minutes:mins}).eq('id',CLOCK.id);
+  }else{
+    const {error}=await sb.from('timeclock').update({clock_out:new Date().toISOString()}).eq('id',CLOCK.id);
     if(error)return alert('Clock-out failed: '+error.message);
-  }else return;
+  }
   await loadClock();if(isHead())loadTeam();
 }
 async function markLeave(){
   const d=prompt('Leave date (YYYY-MM-DD):',today());if(!d)return;
   const r=prompt('Reason (optional):')||'';
-  const {error}=await sb.from('leave_days').upsert({username:ME.username,name:ME.name,leave_date:d,reason:r},{onConflict:'username,leave_date'});
-  alert(error?'Failed: '+error.message:'Leave marked for '+d);if(isHead())loadTeam();
+  const {error}=await sb.from('leaves').insert({username:ME.username,from_date:d,to_date:d,reason:r||null,status:'approved'});
+  alert(error?'Failed: '+error.message:'Leave applied for '+d);loadOnLeave();if(isHead())loadTeam();
+}
+async function loadOnLeave(){
+  const el=$('onLeave');if(!el)return;
+  try{
+    const d=today();
+    const [{data:lv},{data:roles}]=await Promise.all([
+      sb.from('leaves').select('username').lte('from_date',d).gte('to_date',d),
+      sb.from('roles').select('name,username')]);
+    const nm={};(roles||[]).forEach(r=>nm[r.username]=r.name);
+    const names=(lv||[]).map(l=>nm[l.username]||l.username);
+    if(names.length){el.style.display='';el.className='chip warm';el.innerHTML='<span class="dot" style="background:var(--warn,#ffc24b)"></span>On leave: '+names.map(esc).join(', ');}
+    else el.style.display='none';
+  }catch(e){el.style.display='none';}
 }
 async function loadTeam(){
+  const today0=new Date();today0.setHours(0,0,0,0);const d=today();
   const [{data:att},{data:lv},{data:staff}]=await Promise.all([
-    sb.from('staff_attendance').select('*').eq('work_date',today()),
-    sb.from('leave_days').select('*').eq('leave_date',today()),
+    sb.from('timeclock').select('username,clock_in,clock_out').gte('clock_in',today0.toISOString()),
+    sb.from('leaves').select('username').lte('from_date',d).gte('to_date',d),
     sb.from('roles').select('name,username,role')]);
-  const inMap={};(att||[]).forEach(a=>inMap[a.username]=a);
-  const lvMap={};(lv||[]).forEach(l=>lvMap[l.username]=l);
+  const inMap={};(att||[]).forEach(a=>{if(!inMap[a.username]||!a.clock_out)inMap[a.username]=a;});
+  const lvSet=new Set((lv||[]).map(l=>l.username));
   const rows=(staff||[]).filter(s=>s.role!=='admin');
   $('teamList').className='';
   $('teamList').innerHTML=rows.map(s=>{
-    const a=inMap[s.username],l=lvMap[s.username];
+    const a=inMap[s.username];
     let chip='<span class="chip">Not in</span>';
-    if(l)chip='<span class="chip warm">On leave</span>';
-    else if(a&&a.clock_in&&!a.clock_out)chip='<span class="chip ok">Working</span>';
-    else if(a&&a.clock_out)chip='<span class="chip">Done '+Math.floor((a.minutes||0)/60)+'h</span>';
+    if(lvSet.has(s.username))chip='<span class="chip warm">On leave</span>';
+    else if(a&&!a.clock_out)chip='<span class="chip ok">Working</span>';
+    else if(a&&a.clock_out){const m=Math.round((new Date(a.clock_out)-new Date(a.clock_in))/60000);chip='<span class="chip">Done '+Math.floor(m/60)+'h '+(m%60)+'m</span>';}
     return '<div class="li"><span class="t">'+esc(s.name)+'</span><span class="m">'+esc(s.role)+'</span>'+chip+'</div>';}).join('')||'<div class="empty">No staff rows.</div>';
 }
 
