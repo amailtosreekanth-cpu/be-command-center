@@ -74,6 +74,20 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .loading{color:var(--tx3);font-size:12px;padding:20px;text-align:center;}
 .warn-box{background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6;}
 .warn-box b{color:var(--yellow);}
+.lv-note{font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px;}
+.lv-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.lv-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:7px 13px;border-radius:99px;background:rgba(255,196,0,.1);border:1px solid rgba(255,196,0,.28);color:var(--yellow);}
+.lv-chip .lv-sub{color:var(--tx3);font-weight:500;}
+.lv-none{font-size:12px;color:var(--tx3);}
+.lv-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.lv-field{display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;}
+.lv-field.lv-grow{flex:1;min-width:150px;}
+.lv-field input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none;}
+.lv-field input:focus{border-color:rgba(237,31,81,.5);}
+.lv-apply{padding:11px 22px;border:none;border-radius:9px;background:var(--gk);color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(237,31,81,.3);}
+.stu-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12.5px;margin-bottom:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:12px;}
+.stu-grid .k{color:var(--tx3);text-transform:uppercase;font-size:9.5px;letter-spacing:.07em;align-self:center;}
+.stu-grid .v{color:var(--tx);font-weight:600;}
 
 .daychips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
 .dchip{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;user-select:none;transition:all .15s}
@@ -113,6 +127,20 @@ details[open] .rawsum::before{content:'▾ '}
 
   <div class="grid" id="statgrid"></div>
 
+  <div class="section" id="leaveShared">
+    <h2>Leave &amp; Attendance <span class="tag">HR</span></h2>
+    <div class="lv-note">Clock in / out with the button up top — that's yours alone. Leave below is visible to the whole team.</div>
+    <div class="subhead" style="margin:4px 0 10px">On leave today</div>
+    <div id="onLeaveToday" class="loading">Loading…</div>
+    <div class="subhead" style="margin:18px 0 10px">Apply your own leave</div>
+    <div class="lv-row">
+      <label class="lv-field"><span>From</span><input id="lv_from" type="date"/></label>
+      <label class="lv-field"><span>To</span><input id="lv_to" type="date"/></label>
+      <label class="lv-field lv-grow"><span>Reason</span><input id="lv_reason" placeholder="Optional"/></label>
+      <button class="lv-apply" onclick="saveLeave()">Apply</button>
+    </div>
+  </div>
+
   <div class="section" id="liveSection">
     <h2>Live Batches &amp; Attendance <span class="tag">Live · Database</span> <button onclick="openAddStudent()" id="addStuBtn" style="display:none">+ Add Student</button></h2>
     <div id="liveBatches" class="loading">Loading…</div>
@@ -125,7 +153,7 @@ details[open] .rawsum::before{content:'▾ '}
 
   <div id="headView" style="display:none">
     <div class="section">
-      <h2>Trainers <button onclick="openModal('trainer')">+ Add Trainer</button></h2>
+      <h2>Trainers <span style="display:inline-flex;gap:8px"><button id="pinBtn" class="act-btn" onclick="setDeletePin()">Set Delete PIN</button><button onclick="openModal('trainer')">+ Add Trainer</button></span></h2>
       <table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="trainerTable"></tbody></table>
     </div>
@@ -144,17 +172,6 @@ details[open] .rawsum::before{content:'▾ '}
       <h2>Assign Task <button onclick="openModal('assignment')">+ New Task</button></h2>
       <table><thead><tr><th>Trainer</th><th>Task</th><th>Due</th><th>Status</th></tr></thead>
         <tbody id="assignTable"></tbody></table>
-    </div>
-    <div class="section">
-      <h2>Team Clock &amp; Leave <span class="tag">HR</span></h2>
-      <div id="teamClock" class="loading">Loading…</div>
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <select id="lv_user" style="max-width:170px"></select>
-        <input id="lv_from" type="date" style="max-width:150px"/>
-        <input id="lv_to" type="date" style="max-width:150px"/>
-        <input id="lv_reason" placeholder="Reason" style="max-width:170px"/>
-        <button onclick="saveLeave()">+ Add Leave</button>
-      </div>
     </div>
   </div>
 
@@ -211,7 +228,7 @@ details[open] .rawsum::before{content:'▾ '}
   <h3 id="course_title">Define Course</h3>
   <input id="c_name" placeholder="Course name (e.g. Foundation) *"/>
   <div class="mrow">
-    <select id="c_type" onchange="courseTypeChanged()"><option value="group">Group cohort</option><option value="one-on-one">One-on-one</option></select>
+    <select id="c_type" onchange="courseTypeChanged()"><option value="group">Group cohort</option><option value="one-on-one">One-on-one</option><option value="recorded">Recorded (one-time)</option></select>
     <input id="c_code" placeholder="Short code (e.g. FND)"/>
   </div>
   <div class="mrow">
@@ -225,6 +242,7 @@ details[open] .rawsum::before{content:'▾ '}
   <div class="subhead" style="margin:10px 0 8px">Default class days</div>
   <div class="daychips" id="c_days"></div>
   <select id="c_mc"><option value="Sat">MC · Saturday</option><option value="Sun">MC · Sunday</option><option value="Fri">MC · Friday</option><option value="">No masterclass</option></select>
+  <div class="mhint" id="c_rec_hint" style="color:var(--yellow);display:none">Recorded course — one-time purchase, no live sessions. Set the <b>validity (days)</b> in the Duration field above.</div>
   <div class="mhint">Defaults only — every batch prefills from these and can override them, even midway.</div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('course')">Cancel</button><button class="btn-save" onclick="saveCourse()">Save Course</button></div>
 </div></div>
@@ -248,22 +266,31 @@ details[open] .rawsum::before{content:'▾ '}
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('session')">Cancel</button><button class="btn-save" onclick="saveSession()">Save</button></div>
 </div></div>
 
-<div class="modal-bg" id="modalStudent"><div class="modal" style="width:440px">
+<div class="modal-bg" id="modalStudent"><div class="modal" style="width:460px">
   <h3>Add Student · manual entry</h3>
   <input id="s_name" placeholder="Student name *"/>
-  <div class="mrow"><input id="s_uin" placeholder="UIN (blank = auto)"/><input id="s_contact" placeholder="Contact"/></div>
+  <div class="mrow"><input id="s_uin" placeholder="Student ID (blank = auto)"/><input id="s_contact" placeholder="Contact number"/></div>
   <div class="mrow">
     <input id="s_batch" list="s_batch_list" placeholder="Batch name"/><datalist id="s_batch_list"></datalist>
     <input id="s_trainer" placeholder="Trainer name"/>
   </div>
   <div class="mrow">
-    <input id="s_prog" list="s_prog_list" placeholder="Programme / course"/><datalist id="s_prog_list"></datalist>
-    <input id="s_end" type="date" title="Planned end date"/>
+    <select id="s_prog" onchange="studentCourseChanged()"><option value="">Course / programme…</option></select>
+    <select id="s_counsellor"><option value="">Counsellor / sales…</option></select>
+  </div>
+  <div class="mrow">
+    <label class="lv-field lv-grow"><span>Enrolment date</span><input id="s_enroll" type="date"/></label>
+    <label class="lv-field lv-grow"><span>Planned end</span><input id="s_end" type="date"/></label>
   </div>
   <div class="mrow">
     <select id="s_status"><option>In Progress</option><option>Upcoming</option><option>On Freeze</option><option>Completed</option><option>Dropped</option></select>
-    <input id="s_fee" type="number" placeholder="Course fee ₹ (starts payment plan)"/>
+    <input id="s_fee" type="number" placeholder="Course fee ₹"/>
   </div>
+  <div class="mrow">
+    <input id="s_paid1" type="number" placeholder="First payment received ₹ (optional)"/>
+    <select id="s_method"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Card</option></select>
+  </div>
+  <div class="mhint">Fee auto-fills from the course (editable). First payment is dated to the enrolment date.</div>
   <div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('modalStudent').classList.remove('on')">Cancel</button><button class="btn-save" onclick="saveStudent()">Save Student</button></div>
 </div></div>
 
@@ -282,6 +309,7 @@ details[open] .rawsum::before{content:'▾ '}
   <div id="p_entries" style="max-height:150px;overflow:auto;font-size:12px;margin-bottom:8px"></div>
   <div class="mrow"><input id="pe_amt" type="number" placeholder="Amount received ₹"/><input id="pe_date" type="date"/><select id="pe_method"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Card</option></select></div>
   <div class="modal-actions">
+    <button class="btn-cancel" onclick="deleteStudent()" style="border:1px solid rgba(237,31,81,.4);color:var(--k1)">Delete</button>
     <button class="btn-cancel" onclick="document.getElementById('modalStu').classList.remove('on')">Close</button>
     <button class="btn-save" onclick="addPay()">+ Record Payment</button>
     <button class="btn-save" onclick="savePlan()">Save Plan</button>
@@ -342,7 +370,7 @@ function logout(){
 
 async function loadLive(){
   const isHead=currentUser.role==='founder'||currentUser.role==='academic_head';
-  const {data:studs}=await sb.from('students').select('id,uin,name,contact,batch_name,trainer_name,programme,status,planned_end_date');
+  const {data:studs}=await sb.from('students').select('id,uin,name,contact,batch_name,trainer_name,programme,status,planned_end_date,source_counsellor,enrolled_date');
   let rows=(studs||[]).filter(s=>s.name);
   if(!isHead){const me=(currentUser.name||'').toLowerCase();rows=rows.filter(s=>(s.trainer_name||'').toLowerCase()===me);}
   const today=new Date().toISOString().slice(0,10);
@@ -445,6 +473,7 @@ async function boot(){
 
   if (currentUser.role === 'founder' || currentUser.role === 'academic_head') {
     document.getElementById('headView').style.display = 'block';
+    if(currentUser.role!=='founder'){const pb=document.getElementById('pinBtn');if(pb)pb.remove();}
     await loadHeadView();
     if (currentUser.role === 'academic_head') {
       document.getElementById('trainerView').style.display = 'block';
@@ -468,7 +497,8 @@ async function boot(){
     document.getElementById('statgrid').style.display='none';
   } else { await loadLive(); await loadStats(); }
   initClock();
-  if(isHead)loadTeamClock();
+  loadLeave();
+  loadDeletePin();
 }
 
 async function loadStats(){
@@ -562,8 +592,37 @@ async function saveTrainer(){
   await loadHeadView(); await loadStats();
 }
 
+/* ── Delete authorization: founder-set PIN, required for non-founder deletes ── */
+let _deletePin=null;
+async function loadDeletePin(){try{const {data}=await sb.from('site_config').select('value').eq('key','security.delete_pin').maybeSingle();_deletePin=(data&&data.value&&data.value.pin)||null;}catch(e){}}
+function requireDeleteAuth(what){
+  if(currentUser.role==='founder')return true;
+  if(!_deletePin){alert('No delete PIN set. Ask the Founder to set one before deleting a '+what+'.');return false;}
+  const p=prompt('Enter the delete PIN to remove this '+what+':');
+  if(p===null)return false;
+  if(p!==_deletePin){alert('Wrong PIN — delete cancelled.');return false;}
+  return true;
+}
+async function setDeletePin(){
+  if(currentUser.role!=='founder'){alert('Only the Founder can set the delete PIN.');return;}
+  const p=prompt('Set delete PIN (used to delete students & trainers). Blank clears it:');
+  if(p===null)return;
+  const {error}=await sb.from('site_config').upsert({key:'security.delete_pin',value:{pin:p.trim()||null}},{onConflict:'key'});
+  if(error){alert('Save failed: '+error.message);return;}
+  _deletePin=p.trim()||null;alert('Delete PIN '+(_deletePin?'set':'cleared')+'.');
+}
+async function deleteStudent(){
+  if(!requireHeadAccess())return;const s=_stu;if(!s||!s.id)return;
+  if(!requireDeleteAuth('student'))return;
+  if(!confirm('Delete student "'+s.name+'" permanently? This cannot be undone.'))return;
+  const {error}=await sb.from('students').delete().eq('id',s.id);
+  if(error){alert('Cannot delete — payment or attendance links may block it:\n'+error.message);return;}
+  document.getElementById('modalStu').classList.remove('on');
+  loadLive();loadStats();
+}
 async function deleteTrainer(id, name){
   if (!requireHeadAccess()) return;
+  if (!requireDeleteAuth('trainer')) return;
   if (!confirm('Delete trainer "'+name+'" permanently? This cannot be undone.')) return;
   const {error}=await sb.from('trainers').delete().eq('id', id);
   if(error){alert('Cannot delete: this trainer still has batches or sessions linked. Reassign or delete those first.\n\n('+error.message+')');return;}
@@ -589,10 +648,10 @@ function renderCourseTable(){
   const el=document.getElementById('courseTable'); if(!el)return;
   el.innerHTML=COURSE_ROWS.map(c=>`
     <tr><td>${esc(c.name)}${c.active===false?' <span class="badge b-inactive">off</span>':''}</td>
-    <td>${c.type==='one-on-one'?'1:1':'Group'}</td>
-    <td>${c.sessions_total||'—'}</td>
-    <td>${c.duration_days?c.duration_days+'d':'—'}</td>
-    <td>${c.type==='one-on-one'?'1':(c.max_students||'—')}</td>
+    <td>${c.type==='one-on-one'?'1:1':(c.type==='recorded'?'Recorded':'Group')}</td>
+    <td>${c.type==='recorded'?'—':(c.sessions_total||'—')}</td>
+    <td>${c.duration_days?c.duration_days+'d'+(c.type==='recorded'?' validity':''):'—'}</td>
+    <td>${c.type==='recorded'?'—':(c.type==='one-on-one'?'1':(c.max_students||'—'))}</td>
     <td>${esc(c.default_days||'—')}${c.mc_day?' · MC '+esc(c.mc_day):''}</td>
     <td><button class="act-btn" onclick="openCourse('${c.id}')">Edit</button>
     <button class="act-btn" onclick="toggleCourse('${c.id}')">${c.active===false?'Enable':'Disable'}</button></td></tr>
@@ -601,13 +660,19 @@ function renderCourseTable(){
 function populateCourseSelect(){
   const sel=document.getElementById('m_b_type'); if(!sel)return;
   const live=COURSE_ROWS.filter(c=>c.active!==false);
-  sel.innerHTML=live.map(c=>`<option value="${c.id}">${esc(c.name)}${c.type==='one-on-one'?' · 1:1':''}</option>`).join('')
+  sel.innerHTML=live.map(c=>`<option value="${c.id}">${esc(c.name)}${c.type==='one-on-one'?' · 1:1':(c.type==='recorded'?' · Recorded':'')}</option>`).join('')
     ||'<option value="">No courses yet — define one first</option>';
 }
 function courseTypeChanged(){
-  const oneone=document.getElementById('c_type').value==='one-on-one';
-  const cap=document.getElementById('c_cap');
-  cap.disabled=oneone; cap.placeholder=oneone?'1 (one-on-one)':'Max students (group)'; if(oneone)cap.value='';
+  const t=document.getElementById('c_type').value, oneone=t==='one-on-one', rec=t==='recorded';
+  const cap=document.getElementById('c_cap'), sess=document.getElementById('c_sessions'), dur=document.getElementById('c_duration'), mc=document.getElementById('c_mc'), days=document.getElementById('c_days');
+  cap.disabled=oneone||rec; cap.placeholder=rec?'—':(oneone?'1 (one-on-one)':'Max students (group)'); if(oneone||rec)cap.value='';
+  sess.disabled=rec; sess.placeholder=rec?'—':'Total sessions *'; if(rec)sess.value='';
+  dur.placeholder=rec?'Validity (days) *':'Duration (days)';
+  const dim=rec?'.35':'1';
+  days.style.opacity=dim; days.style.pointerEvents=rec?'none':'';
+  mc.disabled=rec; mc.style.opacity=dim;
+  document.getElementById('c_rec_hint').style.display=rec?'block':'none';
 }
 let _editCourse=null;
 function openCourse(id){
@@ -644,6 +709,7 @@ async function saveCourse(){
     fee:parseFloat(document.getElementById('c_fee').value)||null,
     default_days:days||null,
     mc_day:document.getElementById('c_mc').value||null};
+  if(type==='recorded'){rec.sessions_total=null;rec.max_students=null;rec.default_days=null;rec.mc_day=null;}
   let error;
   if(_editCourse&&_editCourse.id){({error}=await sb.from('courses').update(rec).eq('id',_editCourse.id));}
   else{rec.active=true;({error}=await sb.from('courses').insert(rec));}
@@ -766,9 +832,21 @@ function openAddStudent(){
   if(!requireHeadAccess())return;
   const batches=[...new Set((window._liveBatches||[]).map(function(b){return b.raw;}).filter(Boolean))];
   document.getElementById('s_batch_list').innerHTML=batches.map(function(b){return '<option value="'+esc(b)+'">';}).join('');
-  sb.from('courses').select('name').eq('active',true).then(function(r){
-    document.getElementById('s_prog_list').innerHTML=((r&&r.data)||[]).map(function(c){return '<option value="'+esc(c.name)+'">';}).join('');},function(){});
+  const cs=document.getElementById('s_prog');
+  cs.innerHTML='<option value="">Course / programme…</option>'+COURSE_ROWS.filter(function(c){return c.active!==false;}).map(function(c){return '<option value="'+esc(c.name)+'" data-fee="'+(c.fee||'')+'" data-dur="'+(c.duration_days||'')+'">'+esc(c.name)+'</option>';}).join('');
+  sb.from('roles').select('name,username,role').then(function(r){
+    const list=((r&&r.data)||[]).filter(function(x){return x.role==='counsellor'||x.role==='counsellor_head';});
+    document.getElementById('s_counsellor').innerHTML='<option value="">Counsellor / sales…</option>'+list.map(function(x){return '<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>';}).join('');
+  },function(){});
+  document.getElementById('s_enroll').value=new Date().toISOString().slice(0,10);
   document.getElementById('modalStudent').classList.add('on');
+}
+function studentCourseChanged(){
+  const sel=document.getElementById('s_prog'), opt=sel.options[sel.selectedIndex];
+  if(!opt)return;
+  const fee=opt.getAttribute('data-fee'); if(fee)document.getElementById('s_fee').value=fee;
+  const dur=parseInt(opt.getAttribute('data-dur'))||0, en=document.getElementById('s_enroll').value;
+  if(dur&&en){const d=new Date(en);d.setDate(d.getDate()+dur);document.getElementById('s_end').value=d.toISOString().slice(0,10);}
 }
 async function saveStudent(){
   if(!requireHeadAccess())return;
@@ -787,11 +865,14 @@ async function saveStudent(){
       }
     }
   }
-  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:batchName,batch_id:batch_id,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null};
+  const enroll=g('s_enroll')||new Date().toISOString().slice(0,10);
+  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:batchName,batch_id:batch_id,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null,source_counsellor:g('s_counsellor')||null,enrolled_date:enroll};
   const {data,error}=await sb.from('students').insert(rec).select().single();
   if(error){alert('Save failed: '+error.message);return;}
   const fee=parseFloat(g('s_fee'))||0;
   if(fee>0)await sb.from('payments').upsert({student_id:data.id,course_fee:fee},{onConflict:'student_id'});
+  const paid1=parseFloat(g('s_paid1'))||0;
+  if(paid1>0){const {error:pe}=await sb.from('payment_entries').insert({student_id:data.id,amount:paid1,paid_at:enroll,method:g('s_method')||'UPI',entered_by:currentUser.name});if(pe)alert('Student saved, but first payment failed: '+pe.message);}
   document.getElementById('modalStudent').classList.remove('on');
   loadLive();loadStats();
 }
@@ -806,13 +887,22 @@ async function saveStuStatus(){
 async function openStu(i,j){
   if(!requireHeadAccess())return;
   const b=window._liveBatches[i];if(!b)return;const s=b.students[j];if(!s)return;_stu=s;
-  document.getElementById('stu_name').textContent=s.name+(s.uin?' · '+s.uin:'');
-  document.getElementById('stu_info').textContent=(s.batch_name||'—')+' · '+(s.programme||'—')+' · '+(s.trainer_name||'—')+' · '+(s.contact||'no contact')+' · '+(s.status||'');
+  document.getElementById('stu_name').textContent=s.name;
+  document.getElementById('stu_info').innerHTML='<div class="stu-grid">'
+    +'<span class="k">Student ID</span><span class="v">'+esc(s.uin||'—')+'</span>'
+    +'<span class="k">Contact</span><span class="v">'+esc(s.contact||'—')+'</span>'
+    +'<span class="k">Course</span><span class="v">'+esc(s.programme||'—')+'</span>'
+    +'<span class="k">Batch</span><span class="v">'+esc(s.batch_name||'—')+'</span>'
+    +'<span class="k">Trainer</span><span class="v">'+esc(s.trainer_name||'—')+'</span>'
+    +'<span class="k">Counsellor</span><span class="v">'+esc(s.source_counsellor||'—')+'</span>'
+    +'<span class="k">Enrolled</span><span class="v">'+esc(s.enrolled_date||'—')+'</span>'
+    +'<span class="k">Status</span><span class="v">'+esc(s.status||'—')+'</span>'
+    +'</div>';
   var _ss=document.getElementById('stu_status');if(_ss)_ss.value=s.status||'In Progress';
   document.getElementById('modalStu').classList.add('on');
   try{const {data:att}=await sb.from('attendance').select('status').eq('student_uin',s.uin);
     const p=(att||[]).filter(function(a){return a.status==='present';}).length,t=(att||[]).length;
-    document.getElementById('stu_att').textContent='Attendance: '+p+' present / '+t+' marked'+(t?' ('+Math.round(p/t*100)+'%)':'');
+    document.getElementById('stu_att').textContent='Progress · attendance: '+p+' present / '+t+' marked'+(t?' ('+Math.round(p/t*100)+'%)':' — none marked yet');
   }catch(e){document.getElementById('stu_att').textContent='';}
   renderStuPay();
 }
@@ -873,36 +963,29 @@ async function clockToggle(){
     if(_openClock)await sb.from('timeclock').update({clock_out:new Date().toISOString()}).eq('id',_openClock.id);
     else await sb.from('timeclock').insert({username:currentUser.username});
     await initClock();
-    if(currentUser.role==='founder'||currentUser.role==='academic_head')loadTeamClock();
   }catch(e){alert('Clock failed \u2014 run the Phase 1 migration first.');}
 }
-async function loadTeamClock(){
-  const el=document.getElementById('teamClock');if(!el)return;
+async function loadLeave(){
+  const el=document.getElementById('onLeaveToday');if(!el)return;
   try{
-    const today=new Date();today.setHours(0,0,0,0);
     const d=new Date().toISOString().slice(0,10);
-    const r1=await sb.from('timeclock').select('*').gte('clock_in',today.toISOString()).order('clock_in');
     const r2=await sb.from('leaves').select('*').lte('from_date',d).gte('to_date',d);
     const r3=await sb.from('roles').select('name,username');
-    if(r1.error)throw r1.error;
     const us=r3.data||[];
     const nameOf=function(u){const m=us.find(function(x){return x.username===u;});return m?m.name:u;};
-    const sel=document.getElementById('lv_user');
-    if(sel&&!sel.options.length)sel.innerHTML=us.map(function(u){return '<option value="'+esc(u.username)+'">'+esc(u.name)+'</option>';}).join('');
-    const fmt=function(t){return new Date(t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});};
-    const rows=(r1.data||[]).map(function(r){return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07);padding:5px 0"><span>'+esc(nameOf(r.username))+'</span><span style="opacity:.7">'+fmt(r.clock_in)+(r.clock_out?' \u2192 '+fmt(r.clock_out):' \u00b7 <b style="color:#2fe08c">IN</b>')+'</span></div>';}).join('');
-    const lvs=(r2.data||[]).map(function(l){return '<span style="color:#ffc24b">'+esc(nameOf(l.username))+' (till '+l.to_date+')</span>';}).join(' \u00b7 ');
-    el.className='';
-    el.innerHTML=(lvs?'<div style="margin-bottom:8px">On leave today: '+lvs+'</div>':'<div style="margin-bottom:8px;opacity:.5">No one on leave today.</div>')+(rows||'<div style="opacity:.5">No clock-ins today yet.</div>');
-  }catch(e){el.className='';el.innerHTML='<div class="empty">Run the Phase 1 migration to activate the HR clock.</div>';}
+    const lvs=(r2.data||[]).map(function(l){return '<span class="lv-chip"><i class="ti ti-plane-departure"></i>'+esc(nameOf(l.username))+'<span class="lv-sub">till '+l.to_date+(l.reason?' \u00b7 '+esc(l.reason):'')+'</span></span>';}).join('');
+    el.className='lv-chips';
+    el.innerHTML=lvs||'<div class="lv-none">No one on leave today.</div>';
+  }catch(e){el.className='';el.innerHTML='<div class="empty">Run the Phase 1 migration to activate leave tracking.</div>';}
 }
 async function saveLeave(){
-  if(!requireHeadAccess())return;
-  const u=document.getElementById('lv_user').value,f=document.getElementById('lv_from').value,t=document.getElementById('lv_to').value;
-  if(!u||!f||!t){alert('Person + both dates required');return;}
-  const {error}=await sb.from('leaves').insert({username:u,from_date:f,to_date:t,reason:document.getElementById('lv_reason').value.trim()||null,status:'approved'});
+  if(!currentUser)return;
+  const f=document.getElementById('lv_from').value,t=document.getElementById('lv_to').value;
+  if(!f||!t){alert('Both dates required');return;}
+  const {error}=await sb.from('leaves').insert({username:currentUser.username,from_date:f,to_date:t,reason:document.getElementById('lv_reason').value.trim()||null,status:'approved'});
   if(error){alert('Save failed: '+error.message);return;}
-  document.getElementById('lv_reason').value='';loadTeamClock();
+  document.getElementById('lv_reason').value='';document.getElementById('lv_from').value='';document.getElementById('lv_to').value='';
+  alert('Leave applied \u2014 the team can see it.');loadLeave();
 }
 
 /* single sign-on from Founder Command Center */
