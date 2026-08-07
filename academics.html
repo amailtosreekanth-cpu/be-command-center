@@ -153,7 +153,7 @@ details[open] .rawsum::before{content:'▾ '}
 
   <div id="headView" style="display:none">
     <div class="section">
-      <h2>Trainers <span style="display:inline-flex;gap:8px"><button id="pinBtn" class="act-btn" onclick="setDeletePin()">Set Delete PIN</button><button onclick="openModal('trainer')">+ Add Trainer</button></span></h2>
+      <h2>Trainers <button onclick="openModal('trainer')">+ Add Trainer</button></h2>
       <table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="trainerTable"></tbody></table>
     </div>
@@ -473,7 +473,6 @@ async function boot(){
 
   if (currentUser.role === 'founder' || currentUser.role === 'academic_head') {
     document.getElementById('headView').style.display = 'block';
-    if(currentUser.role!=='founder'){const pb=document.getElementById('pinBtn');if(pb)pb.remove();}
     await loadHeadView();
     if (currentUser.role === 'academic_head') {
       document.getElementById('trainerView').style.display = 'block';
@@ -498,7 +497,6 @@ async function boot(){
   } else { await loadLive(); await loadStats(); }
   initClock();
   loadLeave();
-  loadDeletePin();
 }
 
 async function loadStats(){
@@ -531,7 +529,7 @@ async function loadHeadView(){
     return `<tr><td>${esc(b.name)}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td>
     <td>${esc(cn)}${b.sessions_total?' · '+b.sessions_total+'s':''}</td>
     <td style="color:${seatCol}">${seats}</td>
-    <td><button class="act-btn" onclick="deleteBatch('${b.id}')">Delete</button></td></tr>`;
+    <td><button class="act-btn" onclick="deleteBatch('${b.id}','${esc(b.name)}')">Delete</button></td></tr>`;
   }).join('') || '<tr><td colspan="6" class="empty">No batches yet</td></tr>';
 
   const { data: assigns } = await sb.from('assignments').select('*, trainers(name)').order('created_at',{ascending:false});
@@ -592,29 +590,16 @@ async function saveTrainer(){
   await loadHeadView(); await loadStats();
 }
 
-/* ── Delete authorization: founder-set PIN, required for non-founder deletes ── */
-let _deletePin=null;
-async function loadDeletePin(){try{const {data}=await sb.from('site_config').select('value').eq('key','security.delete_pin').maybeSingle();_deletePin=(data&&data.value&&data.value.pin)||null;}catch(e){}}
-function requireDeleteAuth(what){
-  if(currentUser.role==='founder')return true;
-  if(!_deletePin){alert('No delete PIN set. Ask the Founder to set one before deleting a '+what+'.');return false;}
-  const p=prompt('Enter the delete PIN to remove this '+what+':');
+/* ── Delete guard: type the word DELETE to confirm (prevents accidental deletes) ── */
+function confirmDelete(what,name){
+  const p=prompt('Type DELETE to remove this '+what+(name?' — "'+name+'"':'')+'.\nThis cannot be undone.');
   if(p===null)return false;
-  if(p!==_deletePin){alert('Wrong PIN — delete cancelled.');return false;}
+  if(p.trim().toLowerCase()!=='delete'){alert('Not deleted — you must type the word DELETE.');return false;}
   return true;
-}
-async function setDeletePin(){
-  if(currentUser.role!=='founder'){alert('Only the Founder can set the delete PIN.');return;}
-  const p=prompt('Set delete PIN (used to delete students & trainers). Blank clears it:');
-  if(p===null)return;
-  const {error}=await sb.from('site_config').upsert({key:'security.delete_pin',value:{pin:p.trim()||null}},{onConflict:'key'});
-  if(error){alert('Save failed: '+error.message);return;}
-  _deletePin=p.trim()||null;alert('Delete PIN '+(_deletePin?'set':'cleared')+'.');
 }
 async function deleteStudent(){
   if(!requireHeadAccess())return;const s=_stu;if(!s||!s.id)return;
-  if(!requireDeleteAuth('student'))return;
-  if(!confirm('Delete student "'+s.name+'" permanently? This cannot be undone.'))return;
+  if(!confirmDelete('student',s.name))return;
   const {error}=await sb.from('students').delete().eq('id',s.id);
   if(error){alert('Cannot delete — payment or attendance links may block it:\n'+error.message);return;}
   document.getElementById('modalStu').classList.remove('on');
@@ -622,8 +607,7 @@ async function deleteStudent(){
 }
 async function deleteTrainer(id, name){
   if (!requireHeadAccess()) return;
-  if (!requireDeleteAuth('trainer')) return;
-  if (!confirm('Delete trainer "'+name+'" permanently? This cannot be undone.')) return;
+  if (!confirmDelete('trainer',name)) return;
   const {error}=await sb.from('trainers').delete().eq('id', id);
   if(error){alert('Cannot delete: this trainer still has batches or sessions linked. Reassign or delete those first.\n\n('+error.message+')');return;}
   await loadHeadView(); await loadStats();
@@ -767,9 +751,11 @@ async function saveBatch(){
   await loadHeadView(); await loadStats();
 }
 
-async function deleteBatch(id){
+async function deleteBatch(id,name){
   if (!requireHeadAccess()) return;
-  await sb.from('batches').delete().eq('id', id);
+  if (!confirmDelete('batch',name||'')) return;
+  const {error}=await sb.from('batches').delete().eq('id', id);
+  if(error){alert('Cannot delete — students or sessions may be linked:\n'+error.message);return;}
   await loadHeadView(); await loadStats();
 }
 
