@@ -65,6 +65,16 @@ input,select,textarea{background:#0d1016;border:1px solid var(--ln);color:#fff;b
   <div class="kpis" id="kpis"></div>
 
   <div class="pn">
+    <h2>My Students <button class="btn sm" onclick="openEnrol()">+ Enrol Student</button></h2>
+    <div id="studentList" class="empty">Loading…</div>
+  </div>
+
+  <div class="pn hide" id="counPn">
+    <h2>Counsellors <button class="btn sm" onclick="openCoun()">+ Add Counsellor</button></h2>
+    <div id="counList" class="empty">Loading…</div>
+  </div>
+
+  <div class="pn">
     <h2>My Tasks <button class="btn sm" onclick="openTask()">+ Task</button></h2>
     <div id="taskList" class="empty">Loading…</div>
   </div>
@@ -111,6 +121,38 @@ input,select,textarea{background:#0d1016;border:1px solid var(--ln);color:#fff;b
   </div>
 </div></div>
 
+<div class="mbg" id="mEnrol"><div class="modal">
+  <h3 style="font-size:15px;margin-bottom:4px">Enrol Student</h3>
+  <div class="eb" style="margin-bottom:12px">Payment taken → student enters the system → Josephine batches them.</div>
+  <input id="en_name" placeholder="Student name *" style="margin-bottom:8px"/>
+  <div class="row"><input id="en_contact" placeholder="Contact number"/><select id="en_course" onchange="enrolCourseChanged()"><option value="">Course *…</option></select></div>
+  <div class="row"><input id="en_slot" placeholder="Preferred time (e.g. 8–9 PM)"/><input id="en_date" type="date" title="Enrolment date = first payment date"/></div>
+  <div class="row"><input id="en_fee" type="number" placeholder="Course fee ₹ (auto)"/><input id="en_paid" type="number" placeholder="First payment ₹"/></div>
+  <select id="en_method"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Card</option></select>
+  <div class="eb" style="margin-top:8px">Enrolment date = date of first payment. Fee is fixed per course.</div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn g" onclick="close_('mEnrol')">Cancel</button><button class="btn" onclick="saveEnrol()">Enrol</button></div>
+</div></div>
+
+<div class="mbg" id="mCoun"><div class="modal">
+  <h3 style="font-size:15px;margin-bottom:12px">Add Counsellor</h3>
+  <input id="cn_name" placeholder="Full name" style="margin-bottom:8px"/>
+  <div class="row"><input id="cn_user" placeholder="Username (login)"/><input id="cn_pass" placeholder="Password"/></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn g" onclick="close_('mCoun')">Cancel</button><button class="btn" onclick="saveCoun()">Add</button></div>
+</div></div>
+
+<div class="mbg" id="mPay"><div class="modal">
+  <h3 id="pay_name" style="font-size:15px;margin-bottom:8px">Student</h3>
+  <div id="pay_summary" style="font-size:13px;margin-bottom:10px"></div>
+  <div class="row"><input id="pay_fee" type="number" placeholder="Course fee ₹"/><input id="pay_disc" type="number" placeholder="Discount ₹"/><button class="btn g sm" onclick="savePayPlan()">Save</button></div>
+  <div class="eb" style="margin:10px 0 6px">Installment plan</div>
+  <div id="pay_inst" class="empty">—</div>
+  <div class="row"><input id="pi_amt" type="number" placeholder="Installment ₹"/><input id="pi_due" type="date" title="Due date"/><button class="btn sm" onclick="addInst()">+ Add</button></div>
+  <div class="eb" style="margin:10px 0 6px">Payments received</div>
+  <div id="pay_entries" class="empty">—</div>
+  <div class="row"><input id="pay_amt" type="number" placeholder="Amount ₹"/><input id="pay_pdate" type="date"/><select id="pay_method"><option>UPI</option><option>Cash</option><option>Bank transfer</option><option>Card</option></select></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn g" onclick="close_('mPay')">Close</button><button class="btn" onclick="recordPay()">Record Payment</button></div>
+</div></div>
+
 <div class="mbg" id="mTask"><div class="modal">
   <h3 style="font-size:15px;margin-bottom:12px">New Task</h3>
   <input id="tk_title" placeholder="Task title" style="margin-bottom:8px"/>
@@ -128,7 +170,7 @@ const SB_URL='https://baazubvfsrpmbfmrzumw.supabase.co';
 const SB_KEY='sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 const STAGES=['New','Contacted','Details Shared','Assessment Booked','Assessment Completed','Ready to Pay','Payment Link Sent','Partially Paid','Enrolled','Follow Up Later','Not Interested','Beyond Intake','Closed'];
-let ME=null,LEADS=[],TASKS=[],COURSES=[],CLOCK=null;
+let ME=null,LEADS=[],TASKS=[],COURSES=[],CLOCK=null,_sMap={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
@@ -156,7 +198,8 @@ async function start(){
   $('who').textContent=ME.name+' · '+(isHead()?'Head':'Counsellor');
   if(!isHead())$('teamPn').classList.add('hide');
   STAGES.forEach(s=>{['ld_stage','fu_stage'].forEach(id=>{const o=document.createElement('option');o.textContent=s;$(id).appendChild(o);});});
-  await loadCourses();await loadClock();await loadLeads();await loadTasks();if(isHead())loadTeam();
+  await loadCourses();await loadClock();await loadLeads();await loadTasks();await loadStudents();
+  if(isHead()){loadTeam();$('counPn').classList.remove('hide');loadCounsellors();}
 }
 
 /* ---------- CLOCK IN / OUT ---------- */
@@ -218,10 +261,137 @@ async function loadTeam(){
 }
 
 /* ---------- COURSES ---------- */
+let COURSE_FEE={};
 async function loadCourses(){
-  const {data}=await sb.from('courses').select('name').eq('active',true);
-  COURSES=(data||[]).map(c=>c.name);
+  const {data}=await sb.from('courses').select('name,fee').eq('active',true);
+  COURSES=(data||[]).map(c=>c.name);COURSE_FEE={};
+  (data||[]).forEach(c=>{COURSE_FEE[c.name]=c.fee||0;});
   COURSES.forEach(c=>{const o=document.createElement('option');o.textContent=c;$('ld_course').appendChild(o);});
+  const en=$('en_course');if(en)en.innerHTML='<option value="">Course *…</option>'+COURSES.map(c=>'<option>'+esc(c)+'</option>').join('');
+}
+
+/* ---------- ENROL STUDENT (sales → academics) ---------- */
+const pad2=n=>String(n).padStart(2,'0');
+async function nextUin(){
+  const {data}=await sb.from('students').select('uin');
+  let max=0;(data||[]).forEach(s=>{const m=/^BRK0*(\d+)$/i.exec(s.uin||'');if(m)max=Math.max(max,+m[1]);});
+  return 'BRK'+pad2(max+1);
+}
+function openEnrol(){$('en_date').value=today();['en_name','en_contact','en_slot','en_fee','en_paid'].forEach(id=>$(id).value='');$('en_course').value='';$('mEnrol').classList.add('on');}
+function enrolCourseChanged(){const c=$('en_course').value;if(c&&COURSE_FEE[c]!=null)$('en_fee').value=COURSE_FEE[c]||'';}
+async function saveEnrol(){
+  const name=$('en_name').value.trim();if(!name)return alert('Name required');
+  const course=$('en_course').value||null;if(!course)return alert('Pick a course');
+  const uin=await nextUin(),enroll=$('en_date').value||today();
+  const rec={uin,name,contact:$('en_contact').value.trim()||null,programme:course,preferred_slot:$('en_slot').value.trim()||null,status:'Upcoming',source_counsellor:ME.name,enrolled_date:enroll};
+  let {data,error}=await sb.from('students').insert(rec).select().single();
+  if(error&&/preferred_slot/.test(error.message||'')){delete rec.preferred_slot;({data,error}=await sb.from('students').insert(rec).select().single());}
+  if(error)return alert('Save failed: '+error.message);
+  const fee=parseFloat($('en_fee').value)||0;
+  if(fee>0)await sb.from('payments').upsert({student_id:data.id,course_fee:fee},{onConflict:'student_id'});
+  const paid1=parseFloat($('en_paid').value)||0;
+  if(paid1>0)await sb.from('payment_entries').insert({student_id:data.id,amount:paid1,paid_at:enroll,method:$('en_method').value,entered_by:ME.name});
+  close_('mEnrol');alert(name+' enrolled → '+uin+'. Now in Josephine’s unassigned list.');loadStudents();
+}
+async function loadStudents(){
+  const el=$('studentList');
+  let q=sb.from('students').select('id,uin,name,contact,programme,status,batch_name,source_counsellor,enrolled_date');
+  if(!isHead())q=q.eq('source_counsellor',ME.name);
+  const {data,error}=await q.order('enrolled_date',{ascending:false});
+  if(error){el.className='';el.innerHTML='<div class="empty">'+esc(error.message)+'</div>';return;}
+  const rows=data||[],ids=rows.map(s=>s.id),payMap={},feeMap={};
+  _sMap={};rows.forEach(s=>{_sMap[s.id]=s.name;});
+  if(ids.length){
+    const {data:pe}=await sb.from('payment_entries').select('student_id,amount').in('student_id',ids);
+    (pe||[]).forEach(p=>{payMap[p.student_id]=(payMap[p.student_id]||0)+ +p.amount;});
+    const {data:pl}=await sb.from('payments').select('student_id,course_fee,discount').in('student_id',ids);
+    (pl||[]).forEach(p=>{feeMap[p.student_id]={fee:+p.course_fee||0,disc:+p.discount||0};});
+  }
+  el.className='';
+  el.innerHTML=rows.length?rows.map(s=>{
+    const paid=payMap[s.id]||0,fm=feeMap[s.id]||{fee:0,disc:0},bal=fm.fee-fm.disc-paid;
+    const assigned=s.batch_name&&s.batch_name!=='Unassigned';
+    const chip=assigned?'<span class="chip ok">'+esc(s.batch_name)+'</span>':'<span class="chip warm">Unassigned</span>';
+    const balChip=fm.fee?(bal>0?'<span class="chip warm">₹'+bal.toLocaleString('en-IN')+' due</span>':'<span class="chip ok">Paid</span>'):'';
+    return '<div class="li" style="cursor:pointer" onclick="openPay(\''+s.id+'\')"><span class="t">'+esc(s.name)+' · '+esc(s.uin||'')+'</span><span class="m">'+esc(s.programme||'—')+(isHead()&&s.source_counsellor?' · '+esc(s.source_counsellor):'')+'</span>'+chip+' '+balChip+'</div>';
+  }).join(''):'<div class="empty">No students yet. Enrol one above.</div>';
+}
+
+/* ---------- COUNSELLOR MANAGEMENT (head) ---------- */
+async function loadCounsellors(){
+  const el=$('counList');if(!el)return;
+  const {data}=await sb.from('roles').select('*').in('role',['counsellor','counsellor_head']).order('name');
+  el.className='';
+  el.innerHTML=(data||[]).map(r=>'<div class="li"><span class="t">'+esc(r.name)+'</span><span class="m">'+esc(r.username)+' · '+esc(r.role)+'</span>'+((r.role!=='counsellor_head'&&r.username!==ME.username)?'<button class="btn g sm" onclick="delCoun(\''+esc(r.username)+'\',\''+esc(r.name)+'\')">Remove</button>':'')+'</div>').join('')||'<div class="empty">No counsellors.</div>';
+}
+function openCoun(){['cn_name','cn_user','cn_pass'].forEach(id=>$(id).value='');$('mCoun').classList.add('on');}
+async function saveCoun(){
+  if(!isHead())return alert('Head only.');
+  const name=$('cn_name').value.trim(),user=$('cn_user').value.trim().toLowerCase(),pass=$('cn_pass').value.trim();
+  if(!name||!user||!pass)return alert('All fields required');
+  const {error}=await sb.from('roles').insert({name,username:user,password:pass,role:'counsellor'});
+  if(error)return alert('Failed: '+error.message);
+  close_('mCoun');loadCounsellors();
+}
+async function delCoun(username,name){
+  if(!isHead())return alert('Head only.');
+  const p=prompt('Type DELETE to remove counsellor "'+name+'".');
+  if(p===null)return;if(p.trim().toLowerCase()!=='delete')return alert('Not removed.');
+  const {error}=await sb.from('roles').delete().eq('username',username).eq('role','counsellor');
+  if(error)return alert('Failed: '+error.message);
+  loadCounsellors();
+}
+
+/* ---------- PAYMENTS + INSTALLMENTS (sales owns) ---------- */
+const inr=n=>'₹'+(+n||0).toLocaleString('en-IN');
+let _payStu=null;
+async function openPay(id){
+  _payStu={id,name:(_sMap[id]||'Student')};
+  $('pay_name').textContent=_payStu.name;
+  ['pi_amt','pi_due','pay_amt'].forEach(x=>$(x).value='');$('pay_pdate').value=today();
+  await renderPay();$('mPay').classList.add('on');
+}
+async function renderPay(){
+  const id=_payStu.id;
+  const {data:pl}=await sb.from('payments').select('*').eq('student_id',id).maybeSingle();
+  const {data:ent}=await sb.from('payment_entries').select('*').eq('student_id',id).order('paid_at');
+  const ri=await sb.from('payment_installments').select('*').eq('student_id',id).order('seq');
+  const inst=ri.error?null:(ri.data||[]);
+  const fee=+((pl&&pl.course_fee)||0),disc=+((pl&&pl.discount)||0);
+  const paid=(ent||[]).reduce((a,e)=>a+ +e.amount,0),bal=fee-disc-paid;
+  $('pay_fee').value=fee||'';$('pay_disc').value=disc||'';
+  $('pay_summary').innerHTML='Fee '+inr(fee)+(disc?' − disc '+inr(disc):'')+' · paid '+inr(paid)+' · <b style="color:'+(bal>0?'var(--warn)':'var(--ok)')+'">balance '+inr(bal)+'</b>';
+  const wrap=$('pay_inst');
+  if(inst===null)wrap.innerHTML='<div class="empty">Run the phase4 SQL to enable installments.</div>';
+  else wrap.innerHTML=inst.length?inst.map(x=>'<div class="li"><span class="t">#'+x.seq+' · '+inr(x.amount)+'</span><span class="m">due '+(x.due_date||'—')+'</span>'+(x.paid?'<span class="chip ok">Paid '+(x.paid_at||'')+'</span>':'<button class="btn sm" onclick="payInst(\''+x.id+'\','+(+x.amount)+')">Mark Paid</button>')+'</div>').join(''):'<div class="empty">No installments yet — add below.</div>';
+  $('pay_entries').innerHTML=(ent||[]).map(e=>'<div class="li"><span class="t">'+inr(e.amount)+'</span><span class="m">'+(e.paid_at||'')+' · '+esc(e.method||'')+' · '+esc(e.entered_by||'')+'</span></div>').join('')||'<div class="empty">No payments recorded.</div>';
+}
+async function savePayPlan(){
+  const id=_payStu.id;
+  const {error}=await sb.from('payments').upsert({student_id:id,course_fee:parseFloat($('pay_fee').value)||0,discount:parseFloat($('pay_disc').value)||0,updated_at:new Date().toISOString()},{onConflict:'student_id'});
+  if(error)return alert('Failed: '+error.message);
+  renderPay();loadStudents();
+}
+async function addInst(){
+  const id=_payStu.id,amt=parseFloat($('pi_amt').value)||0,due=$('pi_due').value||null;
+  if(!amt)return alert('Amount required');
+  const {data}=await sb.from('payment_installments').select('seq').eq('student_id',id).order('seq',{ascending:false}).limit(1);
+  const seq=(((data&&data[0]&&data[0].seq)||0)+1);
+  const {error}=await sb.from('payment_installments').insert({student_id:id,seq,amount:amt,due_date:due,entered_by:ME.name});
+  if(error)return alert('Failed (run phase4 SQL?): '+error.message);
+  $('pi_amt').value='';$('pi_due').value='';renderPay();
+}
+async function payInst(instId,amount){
+  const id=_payStu.id;
+  await sb.from('payment_installments').update({paid:true,paid_at:today()}).eq('id',instId);
+  await sb.from('payment_entries').insert({student_id:id,amount:amount,paid_at:today(),method:'UPI',entered_by:ME.name});
+  renderPay();loadStudents();
+}
+async function recordPay(){
+  const id=_payStu.id,amt=parseFloat($('pay_amt').value)||0;if(!amt)return alert('Amount required');
+  const {error}=await sb.from('payment_entries').insert({student_id:id,amount:amt,paid_at:$('pay_pdate').value||today(),method:$('pay_method').value,entered_by:ME.name});
+  if(error)return alert('Failed: '+error.message);
+  $('pay_amt').value='';renderPay();loadStudents();
 }
 
 /* ---------- LEADS ---------- */
