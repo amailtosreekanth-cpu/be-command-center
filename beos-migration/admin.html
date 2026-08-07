@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#050408"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<title>BE · Admin Panel</title>
+<link rel="icon" href="brand/logo-full.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Barlow:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--thr:237,31,81;--bg:#050408;--panel:#0a0c10;--line:rgba(255,255,255,.08);--bone:#f2f0ec;--steel:#9aa0ab;--ghost:#5b606b;--grad:linear-gradient(120deg,#ed1f51,#f05825)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--bone);font-family:Inter,sans-serif;font-size:13px;min-height:100vh}
+.eb{font-family:Barlow,sans-serif;font-weight:600;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ghost)}
+h1,h2,.num{font-family:Montserrat,sans-serif}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:12.5px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px;color:var(--bone);padding:9px 11px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:rgba(var(--thr),.55)}
+input[type=color]{padding:2px;height:36px;width:52px}
+input[type=checkbox]{width:auto}
+.panel{background:var(--panel);border:1px solid rgba(var(--thr),.16);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--thr),.5),transparent)}
+.btn{background:var(--grad);border:none;color:#fff;font-weight:600;font-size:12px;padding:10px 18px;border-radius:10px}
+.btn:hover{filter:brightness(1.12)}
+.btn2{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--steel);font-size:11.5px;padding:8px 14px;border-radius:9px}
+.btn2:hover{border-color:rgba(var(--thr),.5);color:var(--bone)}
+.btn-danger{background:rgba(255,60,60,.08);border:1px solid rgba(255,60,60,.35);color:#ff7a7a;font-size:11px;padding:7px 12px;border-radius:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:Barlow,sans-serif;font-weight:600;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+.chip.live{color:#2fe08c;border:1px solid rgba(47,224,140,.35);background:rgba(47,224,140,.07)}
+.chip.pend{color:#ffc24b;border:1px solid rgba(255,194,75,.35);background:rgba(255,194,75,.07)}
+/* login */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(var(--thr),.12),transparent 60%),var(--bg)}
+.lbox{width:min(380px,92vw);background:var(--panel);border:1px solid rgba(var(--thr),.22);border-radius:20px;padding:34px 30px;text-align:center;position:relative;overflow:hidden}
+.lbox::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--thr),.8),transparent)}
+.lbox img{height:34px;margin-bottom:14px}
+.lbox h1{font-size:17px;font-weight:800;letter-spacing:.02em}
+.lbox p{color:var(--ghost);font-size:11px;margin:6px 0 20px}
+.lbox input{margin-bottom:11px;text-align:center}
+.lerr{display:none;color:#ff7a7a;font-size:11px;margin-top:12px}
+.lnote{margin-top:18px;font-size:10px;color:var(--ghost);line-height:1.7;border-top:1px solid var(--line);padding-top:12px}
+.shake{animation:shk .4s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+/* app shell */
+#app{display:none;max-width:1180px;margin:0 auto;padding:26px 22px 80px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.top-l{display:flex;align-items:center;gap:14px}
+.top-l img{height:26px}
+.top h1{font-size:19px;font-weight:800}
+.top .sub{font-size:11px;color:var(--ghost);margin-top:2px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tab{font-family:Barlow,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px 15px;display:flex;align-items:center;gap:7px}
+.tab i{font-size:14px}
+.tab.on{color:#fff;background:linear-gradient(120deg,rgba(237,31,81,.18),rgba(240,88,37,.18));border-color:rgba(var(--thr),.5)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.sect{margin-bottom:16px}
+.sect .eb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.fld{margin-bottom:11px}
+.fld label{display:block;font-size:10.5px;color:var(--steel);margin-bottom:5px}
+.row{display:flex;gap:8px;align-items:center}
+table.list{width:100%;border-collapse:collapse}
+@media(max-width:820px){.panel{overflow-x:auto}table.list{min-width:560px}.tabs{overflow-x:auto;flex-wrap:nowrap}.tab{white-space:nowrap}}
+table.list th{font-family:Barlow,sans-serif;font-weight:600;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ghost);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.list td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;vertical-align:middle}
+table.list tr:hover td{background:rgba(255,255,255,.02)}
+.avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:top;border:1.5px solid rgba(var(--thr),.5);vertical-align:middle}
+.avatar-fb{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--grad);font-weight:700;font-size:10px;color:#fff}
+.rolechip{font-family:Barlow,sans-serif;font-weight:600;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--steel)}
+.rolechip.founder{color:#ed6d8d;border-color:rgba(237,31,81,.4)}
+.rolechip.admin{color:#ffc24b;border-color:rgba(255,194,75,.4)}
+.icon-btn{background:none;border:none;color:var(--ghost);font-size:15px;padding:4px}
+.icon-btn:hover{color:var(--bone)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translate(-50%,80px);background:#101318;border:1px solid rgba(47,224,140,.4);color:#2fe08c;font-size:12px;padding:11px 20px;border-radius:12px;transition:transform .35s cubic-bezier(.2,.95,.3,1.12);z-index:99}
+.toast.on{transform:translate(-50%,0)}
+.toast.err{border-color:rgba(255,60,60,.4);color:#ff7a7a}
+/* modal */
+#bk{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;z-index:50}
+#bk.on{display:flex}
+.sheet{width:min(520px,94vw);max-height:86vh;overflow:auto;background:#0b0d12;border:1px solid rgba(var(--thr),.3);border-radius:18px;padding:24px;animation:pop .38s cubic-bezier(.2,.95,.3,1.12)}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.sheet h2{font-size:15px;margin-bottom:16px}
+.setup{border:1px dashed rgba(255,194,75,.4);border-radius:14px;padding:16px;margin-bottom:18px}
+.setup pre{background:#07080c;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:10.5px;color:#9fe8c3;overflow:auto;margin:10px 0;max-height:220px}
+.hint{font-size:10.5px;color:var(--ghost);line-height:1.7}
+.src-light{width:9px;height:9px;border-radius:50%;display:inline-block;background:#3a3f4a}
+.src-light.ok{background:#2fe08c;box-shadow:0 0 8px rgba(47,224,140,.7)}
+.src-light.fail{background:#ff5252;box-shadow:0 0 8px rgba(255,82,82,.7)}
+.dchip{padding:7px 11px!important}
+.dchip.on{border-color:rgba(var(--thr),.7)!important;color:#fff!important;background:linear-gradient(120deg,rgba(237,31,81,.28),rgba(240,88,37,.28))!important}
+.warn-banner{border:1px solid rgba(255,194,75,.4);background:rgba(255,194,75,.06);color:#ffc24b;border-radius:12px;padding:11px 15px;font-size:11.5px;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+
+<!-- LOGIN (only markup in DOM until an authorized role enters — admin UI is injected post-auth) -->
+<div id="login">
+  <div class="lbox" id="lbox">
+    <img src="brand/logo-mark.png" alt="Broken English" onerror="this.style.display='none'"/>
+    <h1>Admin Panel</h1>
+    <p>Back office · Founders &amp; Admin only</p>
+    <input id="lu" placeholder="Username" autocomplete="username"/>
+    <input id="lp" type="password" placeholder="Password" autocomplete="current-password"/>
+    <button class="btn" style="width:100%" onclick="doLogin()">Enter Back Office</button>
+    <div class="lerr" id="lerr">Invalid credentials.</div>
+    <div class="lnote">Convenience lock for an internal tool: this is client-side auth on a public static site — keys are visible in source. Do not store sensitive data here.</div>
+  </div>
+</div>
+
+<div id="app"></div>
+<div id="bk" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const ACAD={url:'https://baazubvfsrpmbfmrzumw.supabase.co',key:'sb_publishable_cpAjOHoZL3AMZHaNieb_0A_Tb1kspmh'};
+const DB=supabase.createClient(ACAD.url,ACAD.key);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let ME=null,CFG={},CFG_TABLE_OK=false,ROLES=[];
+
+/* Which config keys the dashboards already read (honesty labels) */
+const WIRED={'team.photos':true};
+
+const DEFAULTS={
+ 'team.photos':{sreekanth:'photos/Sreekanth.jpg',hasnu:'photos/Hasnu.png',jazeel:'photos/Jazeel.png'},
+ 'courses.catalogue':[
+  {slug:'group-foundation',label:'Foundation',group:32,mc:8,oneonone:2,days:63,active:true},
+  {slug:'group-upgrade',label:'Upgrade',group:32,mc:8,oneonone:2,days:63,active:true},
+  {slug:'elite-oneonone',label:'Elite (1:1)',group:0,mc:0,oneonone:20,days:30,active:true},
+  {slug:'ielts-group',label:'IELTS Group',group:24,mc:0,oneonone:0,days:60,active:true},
+  {slug:'ielts-oneonone',label:'IELTS 1:1',group:0,mc:0,oneonone:12,days:45,active:true},
+  {slug:'recorded',label:'Recorded Course (coming)',group:0,mc:0,oneonone:0,days:180,active:false}],
+ 'sources.sheets':{
+  master:'1Q4cHAm4LrhLM_EcDt0v_X2te038OZM267Q3W5ZeD5XI',
+  assess:'1YLd_SWtFUCzxAF-BxDx8tDHK8NFMHYzCyhVOQkQwSYI',
+  schedule:'1TfL61kl3VeTk7vYhl4IgTgtpi3yhicdCbUPr9QMydBw',
+  tracker:'1rmhxfNZxAEupBQvLIzDY71TurYxSJkRrO4zY7ZxHUTE'},
+ 'globe.settings':{boot:true,rotate:.55,atmosphere:'#4d9fff',arcTime:1700,pointSize:.35,
+  red:[{label:'Dubai',lat:25.2,lng:55.3},{label:'Doha',lat:25.3,lng:51.5},{label:'Riyadh',lat:24.7,lng:46.7},{label:'Kuwait',lat:29.4,lng:48},{label:'Muscat',lat:23.6,lng:58.4},{label:'Bangalore',lat:12.97,lng:77.59},{label:'Mumbai',lat:19.07,lng:72.88}],
+  blue:[{label:'London',lat:51.5,lng:-0.1},{label:'Toronto',lat:43.7,lng:-79.4},{label:'Sydney',lat:-33.9,lng:151.2},{label:'Singapore',lat:1.35,lng:103.8},{label:'New York',lat:40.7,lng:-74},{label:'Delhi',lat:28.6,lng:77.2},{label:'Chennai',lat:13.08,lng:80.27}]},
+ 'content.settings':{missionTarget:1000,tagline:'Real-time overview of the empire. Data. Decisions. Impact.',
+  links:[{label:'Assessment Tool',url:'https://broken-english-assessment.onrender.com'},{label:'Production Suite',url:'https://mediabrkn01-crypto.github.io/Production-Suite/'}],
+  deptCards:{academics:true,sales:true,media:true,projects:true}},
+ 'sales.keywords':{contacted:['contact','call'],interested:['interest'],demo:['demo','assess'],
+  counsellors:['Ashika','Alisha','Hiba','Sumayya','Diya']},
+ 'team.departments':[
+  {name:'Academics',color:'#4d9fff'},{name:'Sales',color:'#00e08a'},
+  {name:'Media',color:'#ff8a2a'},{name:'Projects',color:'#8a63ff'}],
+ 'sources.extra':[]
+};
+
+const SETUP_SQL=`-- Run in Supabase SQL editor · project baazubvfsrpmbfmrzumw (check URL bar!)
+create table if not exists site_config(
+  key text primary key,
+  value jsonb,
+  updated_at timestamp default now());
+alter table site_config enable row level security;
+drop policy if exists "allow all site_config" on site_config;
+create policy "allow all site_config" on site_config for all using (true) with check (true);
+
+-- roles table has a CHECK constraint that rejects new role values ('admin').
+-- Drop it first (same pattern as the batches migration):
+alter table roles drop constraint if exists roles_role_check;
+
+-- Seed the admin login (change the password right after first sign-in):
+insert into roles (name, role, username, password)
+select 'Admin','admin','admin','admin123'
+where not exists (select 1 from roles where username='admin');`;
+
+/* ═══════════ AUTH (role-gated: admin DOM is never built for other roles) ═══════════ */
+async function doLogin(){
+  const u=$('lu').value.trim().toLowerCase(),p=$('lp').value;
+  if(!u||!p)return err('Enter username and password.');
+  const {data,error}=await DB.from('roles').select('*').eq('username',u).eq('password',p).maybeSingle();
+  if(error||!data)return err('Invalid credentials.');
+  if(!['founder','admin'].includes(data.role))return err('No admin access — founders & admin only. Use academics.html.');
+  ME=data;
+  try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
+  enter();
+}
+function err(m){const e=$('lerr');e.textContent=m;e.style.display='block';$('lbox').classList.remove('shake');void $('lbox').offsetWidth;$('lbox').classList.add('shake');}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('login').style.display!=='none'&&!ME)doLogin();});
+async function trySSO(){
+  try{
+    const s=JSON.parse(localStorage.getItem('be_session')||'null');
+    if(!s||Date.now()-(s.t||0)>2592e6)return; /* 30 days */
+    const {data}=await DB.from('roles').select('*').eq('username',s.u).maybeSingle();
+    if(data&&['founder','admin'].includes(data.role)){ME=data;
+      try{localStorage.setItem('be_session',JSON.stringify({u:data.username,n:data.name,r:data.role,t:Date.now()}));}catch(_){}
+      enter();}
+  }catch(_){}
+}
+function signOut(){try{localStorage.removeItem('be_session');}catch(_){}ME=null;location.reload();}
+
+/* ═══════════ BOOT ═══════════ */
+async function enter(){
+  $('login').style.display='none';
+  const app=$('app');app.style.display='block';
+  app.innerHTML=`
+  <div class="top">
+    <div class="top-l">
+      <img src="brand/logo-full.png" alt="" onerror="this.style.display='none'"/>
+      <div><h1>ADMIN PANEL</h1><div class="sub">Back office · signed in as <b>${esc(ME.name)}</b> (${esc(ME.role)})</div></div>
+    </div>
+    <div class="row">
+      <span class="chip live" title="keys the dashboards read today">● live key</span>
+      <span class="chip pend" title="stored now, dashboards wire in next pass">● stored</span>
+      <button class="btn2" onclick="signOut()"><i class="ti ti-logout"></i> Sign out</button>
+    </div>
+  </div>
+  <div class="warn-banner" id="pwWarn"><i class="ti ti-alert-triangle"></i> You are using the default <b>admin/admin123</b> login — change the password now (Identity &amp; Team → Admin → edit).</div>
+  <div id="setupZone"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="tabBody"></div>`;
+  if(ME.username==='admin'&&ME.password==='admin123')$('pwWarn').style.display='block';
+  const TABS=[['team','ti-users','Identity & Team'],['courses','ti-school','Courses'],['batches','ti-layout-grid','Batches'],['sources','ti-database','Data Sources'],['globe','ti-world','Visual & Globe'],['content','ti-notes','Content'],['sales','ti-trending-up','Sales Strategy']];
+  $('tabs').innerHTML=TABS.map(([k,i,l])=>`<button class="tab" data-t="${k}" onclick="goTab('${k}')"><i class="ti ${i}"></i>${l}</button>`).join('');
+  await loadCfg();
+  await loadRoles();
+  await loadOps();
+  goTab('team');
+}
+async function loadCfg(){
+  CFG=JSON.parse(JSON.stringify(DEFAULTS));
+  const {data,error}=await DB.from('site_config').select('*');
+  if(error){CFG_TABLE_OK=false;
+    $('setupZone').innerHTML=`<div class="setup"><div class="eb" style="color:#ffc24b">One-time setup required</div>
+    <div class="hint">The <b>site_config</b> table doesn't exist yet. Until you run this, edits can't be saved (defaults shown below are read-only). Paste in the Supabase SQL editor — project <b>baazubvfsrpmbfmrzumw</b>:</div>
+    <pre id="sqlPre">${esc(SETUP_SQL)}</pre>
+    <button class="btn2" onclick="navigator.clipboard.writeText(document.getElementById('sqlPre').textContent).then(()=>toast('SQL copied'))"><i class="ti ti-copy"></i> Copy SQL</button>
+    <button class="btn2" onclick="location.reload()" style="margin-left:8px"><i class="ti ti-refresh"></i> I ran it — recheck</button></div>`;
+    return;}
+  CFG_TABLE_OK=true;
+  (data||[]).forEach(r=>{CFG[r.key]=r.value;});
+}
+async function loadRoles(){
+  const {data}=await DB.from('roles').select('*').order('role').order('name');
+  ROLES=data||[];
+}
+async function saveCfg(key,value){
+  if(!CFG_TABLE_OK)return toast('Run the setup SQL first — nothing was saved.',true);
+  const {error}=await DB.from('site_config').upsert({key,value,updated_at:new Date().toISOString()});
+  if(error)return toast('Save failed: '+error.message,true);
+  CFG[key]=value;
+  toast(WIRED[key]?'Saved — live on next dashboard refresh.':'Stored — dashboards read this key in the next wiring pass.');
+}
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className='toast on'+(bad?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3200);}
+function goTab(k){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===k));({team:rTeam,courses:rCourses,batches:rBatches,sources:rSources,globe:rGlobe,content:rContent,sales:rSales})[k]();}
+function badge(key){return WIRED[key]?'<span class="chip live">live</span>':'<span class="chip pend">stored · wiring pending</span>';}
+function closeSheet(){$('bk').classList.remove('on');}
+function openSheet(html){$('sheetBody').innerHTML=html;$('bk').classList.add('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+
+/* ═══════════ TAB 1 · IDENTITY & TEAM (roles table = LIVE writes) ═══════════ */
+function avatarFor(u){
+  const p=(CFG['team.photos']||{})[u.username];
+  const init=((u.name||'').match(/\b[A-Za-z]/g)||['B','E']).join('').slice(0,2).toUpperCase();
+  return p?`<img class="avatar" src="${esc(p)}" onerror="this.outerHTML='<span class=avatar-fb>${init}</span>'"/>`:`<span class="avatar-fb">${init}</span>`;
+}
+function rTeam(){
+  $('tabBody').innerHTML=`
+  <div class="panel sect">
+    <div class="eb">Team logins · roles table <span class="chip live">live — both apps read this table</span></div>
+    <table class="list"><thead><tr><th></th><th>Name</th><th>Username</th><th>Role</th><th>Password</th><th>Photo</th><th></th></tr></thead>
+    <tbody>${ROLES.map((u,i)=>`<tr>
+      <td>${avatarFor(u)}</td>
+      <td><b>${esc(u.name)}</b></td>
+      <td style="color:var(--steel)">${esc(u.username)}</td>
+      <td><span class="rolechip ${esc(u.role)}">${esc(u.role)}</span></td>
+      <td style="color:var(--ghost)"><span id="pw${i}">••••••</span> <button class="icon-btn" onclick="togglePw(${i})"><i class="ti ti-eye"></i></button></td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ghost);font-size:10.5px">${esc((CFG['team.photos']||{})[u.username]||'—')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn2" onclick="editUser(${i})"><i class="ti ti-pencil"></i> Edit</button>
+        <button class="btn-danger" onclick="delUser(${i})"><i class="ti ti-trash"></i></button>
+      </td></tr>`).join('')}</tbody></table>
+    <div style="margin-top:14px"><button class="btn" onclick="editUser(-1)"><i class="ti ti-user-plus"></i> Add user</button></div>
+    <div class="hint" style="margin-top:10px">Photos: upload the image to the repo's <b>photos/</b> folder (filenames are case-sensitive on GitHub Pages), then put the path here, e.g. <b>photos/Hasnu.png</b>. The founder deck reads <b>team.photos</b> ${badge('team.photos')}.</div>
+  </div>
+  <div class="panel sect">
+    <div class="eb">Departments ${badge('team.departments')}</div>
+    <table class="list"><thead><tr><th>Name</th><th>Color</th><th></th></tr></thead>
+    <tbody id="deptBody">${(CFG['team.departments']||[]).map(d=>`<tr>
+      <td><input data-f="name" value="${esc(d.name)}" style="min-width:150px"/></td>
+      <td><input type="color" data-f="color" value="${esc(d.color||'#4d9fff')}"/></td>
+      <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`).join('')}</tbody></table>
+    <div class="row" style="margin-top:12px">
+      <button class="btn2" onclick="addDept()"><i class="ti ti-plus"></i> Add department (HR, Customer Service…)</button>
+      <button class="btn" onclick="saveDepts()"><i class="ti ti-device-floppy"></i> Save departments</button>
+    </div>
+    <div class="hint" style="margin-top:10px">New departments become sections on the founder deck in the wiring pass — attach their sheets in Data Sources → More sheets, assign people above.</div>
+  </div>
+  <div class="panel sect">
+    <div class="eb">Trainers · full-time / part-time ${OPS.ok?'<span class="chip live">live DB</span>':'<span class="chip pend">run migration (Courses tab)</span>'}</div>
+    ${OPS.ok?`<table class="list"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Hours / Slots</th><th></th></tr></thead><tbody>
+    ${OPS.trainers.map((t,i)=>{const sl=OPS.slots.filter(x=>x.trainer_id===t.id);
+     return `<tr style="${t.status==='inactive'?'opacity:.45':''}"><td><b>${esc(t.name)}</b></td>
+     <td><span class="rolechip">${t.type==='pt'?'Part-time':'Full-time'}</span></td>
+     <td>${esc(t.status)}</td>
+     <td style="font-size:10.5px;color:var(--steel)">${t.type==='pt'?(sl.length?sl.map(x=>`${x.weekday} ${x.start_time}–${x.end_time}${x.booked?' ●':' ○'}`).join(' · '):'no slots yet'):((t.work_start&&t.work_end)?`${t.work_start}–${t.work_end}${t.weekly_hours?' · '+t.weekly_hours+'h/wk':''}`:'hours not set')}</td>
+     <td style="text-align:right"><button class="btn2" onclick="editTrainer(${i})"><i class="ti ti-pencil"></i> Edit</button></td></tr>`;}).join('')}
+    </tbody></table>
+    <div style="margin-top:12px"><button class="btn" onclick="editTrainer(-1)"><i class="ti ti-plus"></i> Add trainer</button></div>
+    <div class="hint" style="margin-top:8px">○ free · ● booked. Free PT slots become the sales slot board in Phase 3. Batch assignment: Batches tab.</div>`:
+    `<div class="hint">Run the Phase 1 migration (Courses or Batches tab) to manage trainers, hours and slots here.</div>`}
+  </div>`;
+}
+function togglePw(i){const el=$('pw'+i);el.textContent=el.textContent==='••••••'?ROLES[i].password:'••••••';}
+function editUser(i){
+  const u=i<0?{name:'',username:'',password:'',role:'trainer'}:ROLES[i];
+  const photo=(CFG['team.photos']||{})[u.username]||'';
+  openSheet(`<h2>${i<0?'Add user':'Edit · '+esc(u.name)}</h2>
+    <div class="fld"><label>Name</label><input id="eu_n" value="${esc(u.name)}"/></div>
+    <div class="fld"><label>Username</label><input id="eu_u" value="${esc(u.username)}" ${i<0?'':'disabled'}/></div>
+    <div class="fld"><label>Password</label><input id="eu_p" value="${esc(u.password)}"/></div>
+    <div class="fld"><label>Role</label><select id="eu_r">${['founder','admin','academic_head','trainer','counsellor','media','hr'].map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="fld"><label>Photo path / URL (repo photos/… recommended)</label><input id="eu_ph" value="${esc(photo)}" placeholder="photos/Name.png"/></div>
+    <div class="row" style="justify-content:flex-end;margin-top:16px">
+      <button class="btn2" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveUser(${i})">Save</button></div>`);
+}
+async function saveUser(i){
+  const rec={name:$('eu_n').value.trim(),username:$('eu_u').value.trim().toLowerCase(),password:$('eu_p').value,role:$('eu_r').value};
+  if(!rec.name||!rec.username||!rec.password)return toast('Name, username, password required.',true);
+  let error;
+  if(i<0){
+    if(ROLES.some(r=>r.username===rec.username))return toast('Username already exists.',true);
+    ({error}=await DB.from('roles').insert(rec));
+  }else({error}=await DB.from('roles').update(rec).eq('username',ROLES[i].username));
+  if(error)return toast('DB error: '+error.message,true);
+  const ph=$('eu_ph').value.trim(),photos={...(CFG['team.photos']||{})};
+  if(ph)photos[rec.username]=ph;else delete photos[rec.username];
+  if(JSON.stringify(photos)!==JSON.stringify(CFG['team.photos']||{}))await saveCfg('team.photos',photos);
+  else toast('Saved — live immediately (roles table).');
+  closeSheet();await loadRoles();rTeam();
+}
+async function delUser(i){
+  const u=ROLES[i];
+  if(u.username===ME.username)return toast("You can't delete your own login while signed in.",true);
+  if(!confirm(`Delete login "${u.name}" (${u.username})? This is permanent.`))return;
+  const {error}=await DB.from('roles').delete().eq('username',u.username);
+  if(error)return toast('DB error: '+error.message,true);
+  await loadRoles();rTeam();toast('Deleted.');
+}
+
+/* ═══════════ TAB 2 · COURSES ═══════════ */
+const MIG_SQL=`-- ═══════════════════════════════════════════════════════════════
+-- BROKEN ENGLISH · PHASE 1 MIGRATION (courses / batches / trainers /
+-- payments / attendance / timeclock scaffolding)
+-- Run ONCE in Supabase SQL editor · project baazubvfsrpmbfmrzumw
+-- (verify the URL bar shows baazubvfsrpmbfmrzumw before running!)
+-- Idempotent: safe to re-run.
+-- ═══════════════════════════════════════════════════════════════
+
+alter table roles drop constraint if exists roles_role_check;
+
+-- ── Courses (fee defined here, per your spec) ──
+create table if not exists courses(
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  total_group int default 0,
+  total_mc int default 0,
+  total_oneonone int default 0,
+  total_sessions int default 0,          -- flat-count courses (e.g. Speaking 25)
+  duration_days int default 60,
+  default_days text default 'Mon, Tue, Wed, Thu',
+  mc_day text default 'Sat',
+  fee numeric default 0,
+  active boolean default true,
+  created_at timestamptz default now());
+
+-- If a courses table already existed (older build), add any missing columns:
+alter table courses add column if not exists name text;
+alter table courses add column if not exists total_group int default 0;
+alter table courses add column if not exists total_mc int default 0;
+alter table courses add column if not exists total_oneonone int default 0;
+alter table courses add column if not exists total_sessions int default 0;
+alter table courses add column if not exists duration_days int default 60;
+alter table courses add column if not exists default_days text default 'Mon, Tue, Wed, Thu';
+alter table courses add column if not exists mc_day text default 'Sat';
+alter table courses add column if not exists fee numeric default 0;
+alter table courses add column if not exists active boolean default true;
+alter table courses add column if not exists created_at timestamptz default now();
+
+-- ── Batches: lifecycle + course link ──
+alter table batches drop constraint if exists batches_batch_type_check;
+alter table batches add column if not exists sessions_total int;
+alter table batches add column if not exists course_id uuid references courses(id);
+alter table batches add column if not exists capacity int;
+alter table batches add column if not exists completed_at timestamptz;
+
+-- ── Trainers: FT hours / PT prep ──
+alter table trainers add column if not exists work_start text;
+alter table trainers add column if not exists work_end text;
+alter table trainers add column if not exists weekly_hours int;
+
+-- ── PT trainer availability → future sales slot board ──
+create table if not exists trainer_slots(
+  id uuid primary key default gen_random_uuid(),
+  trainer_id uuid references trainers(id) on delete cascade,
+  weekday text, start_time text, end_time text,
+  booked boolean default false,
+  course_hint text, note text);
+
+-- ── Real session calendar (replaces time-paced estimates) ──
+create table if not exists class_sessions(
+  id uuid primary key default gen_random_uuid(),
+  batch_id uuid references batches(id) on delete cascade,
+  session_no int,
+  stype text default 'group',            -- group / mc / oneonone / activity
+  sdate date, stime text,
+  status text default 'scheduled',       -- scheduled / done / cancelled
+  trainer_id uuid references trainers(id),
+  notes text,
+  created_at timestamptz default now());
+
+-- ── Attendance (trainer marks per session) ──
+create table if not exists attendance(
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid references class_sessions(id) on delete cascade,
+  student_id uuid references students(id) on delete cascade,
+  status text default 'present',         -- present / absent / late
+  marked_by text,
+  created_at timestamptz default now(),
+  unique(session_id,student_id));
+
+-- ── Payments: plan per student + transactions ──
+create table if not exists payments(
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade unique,
+  course_fee numeric default 0,
+  discount numeric default 0,
+  discount_by text,
+  next_due date,
+  note text,
+  updated_at timestamptz default now());
+
+create table if not exists payment_entries(
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
+  amount numeric not null,
+  paid_at date default current_date,
+  method text,
+  entered_by text,
+  created_at timestamptz default now());
+
+-- ── HR: clock-in/out + leave ──
+create table if not exists timeclock(
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  clock_in timestamptz default now(),
+  clock_out timestamptz);
+
+create table if not exists leaves(
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  from_date date, to_date date,
+  reason text,
+  status text default 'approved',
+  created_at timestamptz default now());
+
+-- ── Audit trail (who changed what) ──
+create table if not exists audit_log(
+  id uuid primary key default gen_random_uuid(),
+  actor text, action text, target text, detail jsonb,
+  created_at timestamptz default now());
+
+-- ── RLS: permissive (internal tool posture, same as existing tables) ──
+do $$ declare t text;
+begin
+  foreach t in array array['courses','trainer_slots','class_sessions','attendance',
+    'payments','payment_entries','timeclock','leaves','audit_log'] loop
+    execute format('alter table %I enable row level security',t);
+    execute format('drop policy if exists "allow all %s" on %I',t,t);
+    execute format('create policy "allow all %s" on %I for all using (true) with check (true)',t,t);
+  end loop;
+end $$;
+
+-- ── Seed courses (set real fees in Admin → Courses) ──
+insert into courses(name,total_group,total_mc,total_oneonone,total_sessions,duration_days,default_days,mc_day,fee)
+select v.* from (values
+ ('Spoken English Foundation',32,8,2,0,63,'Mon, Tue, Wed, Thu','Sat',0::numeric),
+ ('Spoken English Upgrade',32,8,2,0,63,'Mon, Tue, Wed, Thu','Sat',0::numeric),
+ ('Elite One-on-One',0,0,20,0,30,'','',0::numeric),
+ ('IELTS Group',0,0,0,24,60,'Mon, Tue, Wed, Thu','',0::numeric),
+ ('IELTS One-on-One',0,0,0,12,45,'','',0::numeric),
+ ('Speaking Sessions',0,0,0,25,30,'Mon, Tue, Wed, Thu, Fri','',0::numeric)
+) v(name,tg,tm,t1,ts,dd,dda,mcd,fee)
+where not exists (select 1 from courses);
+
+-- ── Seed employee logins (CHANGE PASSWORDS in Admin → Identity & Team) ──
+insert into roles(name,role,username,password)
+select v.* from (values
+ ('Ashika','counsellor','ashika','ashika123'),
+ ('Alisha','counsellor','alisha','alisha123'),
+ ('Hiba','counsellor','hiba','hiba123'),
+ ('Sumayya','counsellor','sumayya','sumayya123'),
+ ('Diya','counsellor','diya','diya123'),
+ ('Anal','media','anal','anal123'),
+ ('Ali','media','ali','ali123')
+) v(n,r,u,p)
+where not exists (select 1 from roles where username=v.u);
+
+-- Done. Verify:
+select 'courses' t, count(*) from courses
+union all select 'roles', count(*) from roles
+union all select 'trainer_slots', count(*) from trainer_slots;
+`;
+let OPS={ok:false,courses:[],trainers:[],batches:[],slots:[],students:[],sessions:[]};
+async function loadOps(){
+  const [c,t,b,sl,st,cs]=await Promise.all([
+    DB.from('courses').select('*').order('name'),
+    DB.from('trainers').select('*').order('name'),
+    DB.from('batches').select('*').order('name'),
+    DB.from('trainer_slots').select('*'),
+    DB.from('students').select('id,name,batch_id'),
+    DB.from('class_sessions').select('id,batch_id,status')]);
+  if(c.error){OPS.ok=false;return;}
+  OPS={ok:true,courses:c.data||[],trainers:t.data||[],batches:b.data||[],slots:sl.data||[],students:st.data||[],sessions:(cs.data||[])};
+}
+async function audit(action,target,detail){try{await DB.from('audit_log').insert({actor:ME.username,action,target,detail});}catch(_){}}
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const dayChips=sel=>DAYS.map(d=>`<button type="button" class="btn2 dchip ${sel.includes(d)?'on':''}" data-d="${d}" onclick="this.classList.toggle('on')">${d}</button>`).join('');
+const pickDays=box=>[...document.querySelectorAll('#'+box+' .dchip.on')].map(b=>b.dataset.d).join(', ');
+const courseTotal=c=>+c.total_sessions>0?+c.total_sessions:(+c.total_group + +c.total_mc + +c.total_oneonone);
+const courseStruct=c=>+c.total_sessions>0?`${c.total_sessions} sessions`:`${c.total_group}G + ${c.total_mc}MC + ${c.total_oneonone}·1:1`;
+function migCard(){return `<div class="setup"><div class="eb" style="color:#ffc24b">Phase 1 migration required — one paste</div>
+ <div class="hint">New tables missing (courses / payments / attendance / timeclock…). Run in Supabase SQL editor — project <b>baazubvfsrpmbfmrzumw</b> (check URL bar). Safe to re-run.</div>
+ <pre id="migPre">${esc(MIG_SQL)}</pre>
+ <button class="btn2" onclick="navigator.clipboard.writeText(document.getElementById('migPre').textContent).then(()=>toast('SQL copied'))"><i class="ti ti-copy"></i> Copy SQL</button>
+ <button class="btn2" style="margin-left:8px" onclick="location.reload()"><i class="ti ti-refresh"></i> I ran it — recheck</button></div>`;}
+
+function rCourses(){
+  if(!OPS.ok){$('tabBody').innerHTML=migCard();return;}
+  $('tabBody').innerHTML=`<div class="panel sect">
+   <div class="eb">Course catalogue · courses table <span class="chip live">live DB</span></div>
+   <table class="list"><thead><tr><th></th><th>Course</th><th>Structure</th><th>Days</th><th>MC</th><th>Duration</th><th>Fee ₹</th><th></th></tr></thead><tbody>
+   ${OPS.courses.map((c,i)=>`<tr style="${c.active?'':'opacity:.45'}">
+     <td>${c.active?'●':'○'}</td>
+     <td><b>${esc(c.name)}</b></td>
+     <td style="font-size:11px">${courseStruct(c)}</td>
+     <td style="font-size:10.5px;color:var(--steel)">${esc(c.default_days||'—')}</td>
+     <td>${esc(c.mc_day||'—')}</td>
+     <td>${c.duration_days}d</td>
+     <td>${(+c.fee).toLocaleString('en-IN')}</td>
+     <td style="text-align:right;white-space:nowrap">
+       <button class="btn2" onclick="editCourse(${i})"><i class="ti ti-pencil"></i></button>
+       <button class="btn-danger" onclick="delCourse(${i})"><i class="ti ti-trash"></i></button></td></tr>`).join('')}
+   </tbody></table>
+   <div style="margin-top:14px"><button class="btn" onclick="editCourse(-1)"><i class="ti ti-plus"></i> New course</button></div>
+   <div class="hint" style="margin-top:10px">Fee is defined on the course — each student's payment plan starts from it (Phase 2). Deactivating hides a course from the batch creator but keeps history intact.</div></div>`;
+}
+function editCourse(i){
+  const c=i<0?{name:'',total_group:0,total_mc:0,total_oneonone:0,total_sessions:0,duration_days:60,default_days:'Mon, Tue, Wed, Thu',mc_day:'Sat',fee:0,active:true}:OPS.courses[i];
+  const sel=(c.default_days||'').split(',').map(x=>x.trim());
+  openSheet(`<h2>${i<0?'New course':'Edit · '+esc(c.name)}</h2>
+   <div class="fld"><label>Name</label><input id="c_name" value="${esc(c.name)}"/></div>
+   <div class="grid2">
+    <div class="fld"><label>Group sessions (total)</label><input type="number" id="c_g" value="${c.total_group}"/></div>
+    <div class="fld"><label>Masterclasses (total)</label><input type="number" id="c_mc" value="${c.total_mc}"/></div>
+    <div class="fld"><label>One-on-ones (total)</label><input type="number" id="c_oo" value="${c.total_oneonone}"/></div>
+    <div class="fld"><label>OR flat session count (e.g. Speaking = 25; overrides above)</label><input type="number" id="c_ts" value="${c.total_sessions}"/></div>
+    <div class="fld"><label>Duration (days)</label><input type="number" id="c_dd" value="${c.duration_days}"/></div>
+    <div class="fld"><label>Course fee ₹</label><input type="number" id="c_fee" value="${c.fee}"/></div>
+   </div>
+   <div class="fld"><label>Default class days (changeable per batch)</label><div class="row" style="flex-wrap:wrap" id="c_days">${dayChips(sel)}</div></div>
+   <div class="fld"><label>Masterclass day</label><select id="c_mcd">${['','Sat','Sun','Fri'].map(d=>`<option value="${d}" ${d===(c.mc_day||'')?'selected':''}>${d||'None'}</option>`).join('')}</select></div>
+   <div class="fld"><label><input type="checkbox" id="c_act" ${c.active?'checked':''}/> Active</label></div>
+   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn2" onclick="closeSheet()">Cancel</button><button class="btn" onclick="saveCourse(${i})">Save</button></div>`);
+}
+async function saveCourse(i){
+  const rec={name:$('c_name').value.trim(),total_group:+$('c_g').value||0,total_mc:+$('c_mc').value||0,
+   total_oneonone:+$('c_oo').value||0,total_sessions:+$('c_ts').value||0,duration_days:+$('c_dd').value||60,
+   fee:+$('c_fee').value||0,default_days:pickDays('c_days'),mc_day:$('c_mcd').value||null,active:$('c_act').checked};
+  if(!rec.name)return toast('Name required.',true);
+  let error;
+  if(i<0)({error}=await DB.from('courses').insert(rec));
+  else ({error}=await DB.from('courses').update(rec).eq('id',OPS.courses[i].id));
+  if(error)return toast('DB error: '+error.message,true);
+  audit('course.save',rec.name,rec);closeSheet();toast('Saved — live for new batches.');await loadOps();rCourses();
+}
+async function delCourse(i){const c=OPS.courses[i];
+  if(!confirm(`Delete course "${c.name}"? Permanent.`))return;
+  const {error}=await DB.from('courses').delete().eq('id',c.id);
+  if(error)return toast('Batches reference this course — deactivate instead.',true);
+  audit('course.delete',c.name,null);await loadOps();rCourses();}
+
+/* ═══════════ TAB · BATCHES ═══════════ */
+function rBatches(){
+  if(!OPS.ok){$('tabBody').innerHTML=migCard();return;}
+  const act=OPS.batches.filter(b=>b.status!=='completed');
+  const hist=OPS.batches.filter(b=>b.status==='completed');
+  const done=b=>OPS.sessions.filter(x=>x.batch_id===b.id&&x.status==='done').length;
+  const tot=b=>{const c=OPS.courses.find(c=>c.id===b.course_id);return c?courseTotal(c):(+b.sessions_total||0);};
+  const tn=id=>OPS.trainers.find(t=>t.id===id)?.name||'—';
+  const cn=id=>OPS.courses.find(c=>c.id===id)?.name||'—';
+  const stu=b=>OPS.students.filter(x=>x.batch_id===b.id).length;
+  $('tabBody').innerHTML=`
+  <div class="panel sect"><div class="eb">Create batch under a course</div>
+   <div class="grid2"><div>
+    <div class="fld"><label>Batch name</label><input id="b_name" placeholder="BRK_06U Fluent Founders"/></div>
+    <div class="fld"><label>Course</label><select id="b_course" onchange="fillCourseDays()">${OPS.courses.filter(c=>c.active).map(c=>`<option value="${c.id}">${esc(c.name)} · ${courseStruct(c)}</option>`).join('')}</select></div>
+    <div class="fld"><label>Trainer</label><select id="b_tr">${OPS.trainers.filter(t=>t.status==='active').map(t=>`<option value="${t.id}">${esc(t.name)}${t.type==='pt'?' (PT)':''}</option>`).join('')}</select></div>
+   </div><div>
+    <div class="fld"><label>Class days</label><div class="row" style="flex-wrap:wrap" id="b_days">${dayChips([])}</div></div>
+    <div class="fld"><label>Time slot</label><input id="b_time" placeholder="7:00 PM"/></div>
+    <div class="fld"><label>Capacity (blank = no cap)</label><input type="number" id="b_cap"/></div>
+   </div></div>
+   <button class="btn" onclick="createBatch()"><i class="ti ti-plus"></i> Create batch</button>
+   <div class="hint" style="margin-top:8px">MC day auto-appends from the course. Josephine adds students + schedules sessions in the Academics Portal (Phase 2 build).</div></div>
+  <div class="panel sect"><div class="eb">Active batches (${act.length})</div>
+   <table class="list"><thead><tr><th>Batch</th><th>Course</th><th>Trainer</th><th>Students</th><th>Progress</th><th></th></tr></thead><tbody>
+   ${act.map(b=>{const d=done(b),T=tot(b),pct=T?Math.round(d/T*100):0;
+    return `<tr><td><b>${esc(b.name)}</b><div style="font-size:9.5px;color:var(--ghost)">${esc(b.day_pattern||'')} · ${esc(b.time_slot||'')}</div></td>
+    <td style="font-size:11px">${esc(cn(b.course_id))}</td><td>${esc(tn(b.trainer_id))}</td><td>${stu(b)}${b.capacity?'/'+b.capacity:''}</td>
+    <td style="min-width:140px"><div style="height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--grad)"></div></div>
+    <div style="font-size:9px;color:var(--ghost);margin-top:3px">${d}/${T||'—'} · ${T?'confirmed from log':'no course link'}</div></td>
+    <td style="text-align:right"><button class="btn2" onclick="completeBatch('${b.id}')"><i class="ti ti-flag-check"></i> Complete</button></td></tr>`;}).join('')||'<tr><td colspan="6" style="color:var(--ghost);padding:14px">No active batches yet.</td></tr>'}
+   </tbody></table></div>
+  <div class="panel sect"><div class="eb">History · completed (${hist.length})</div>
+   ${hist.length?`<table class="list"><tbody>${hist.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td style="font-size:11px">${esc(cn(b.course_id))}</td><td>${esc(tn(b.trainer_id))}</td><td style="color:var(--ghost)">${b.completed_at?new Date(b.completed_at).toLocaleDateString('en-IN'):''}</td><td style="text-align:right"><button class="btn2" onclick="reopenBatch('${b.id}')">Reopen</button></td></tr>`).join('')}</tbody></table>`:'<div class="hint">Completed batches land here — hidden from founder deck, trainer views and active lists.</div>'}
+  </div>`;
+}
+function fillCourseDays(){const c=OPS.courses.find(c=>c.id===$('b_course').value);if(!c)return;
+  const sel=(c.default_days||'').split(',').map(x=>x.trim());
+  document.querySelectorAll('#b_days .dchip').forEach(b=>b.classList.toggle('on',sel.includes(b.dataset.d)));}
+async function createBatch(){
+  const name=$('b_name').value.trim();if(!name)return toast('Batch name required.',true);
+  const c=OPS.courses.find(c=>c.id===$('b_course').value);
+  const days=pickDays('b_days');
+  const rec={name,course_id:$('b_course').value||null,trainer_id:$('b_tr').value||null,
+    day_pattern:days+(c&&c.mc_day?' · MC '+c.mc_day:''),time_slot:$('b_time').value.trim()||null,
+    capacity:+$('b_cap').value||null,status:'active',
+    batch_type:c?c.name.toLowerCase().replace(/\s+/g,'-'):null,
+    sessions_total:c&&+c.total_sessions>0?+c.total_sessions:null};
+  const {error}=await DB.from('batches').insert(rec);
+  if(error)return toast('DB error: '+error.message,true);
+  audit('batch.create',name,rec);toast('Batch created — live.');await loadOps();rBatches();
+}
+async function completeBatch(id){
+  const b=OPS.batches.find(x=>x.id===id);
+  if(!confirm(`Mark "${b.name}" completed? It disappears from active dashboards (kept in History).`))return;
+  const {error}=await DB.from('batches').update({status:'completed',completed_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast('DB error: '+error.message,true);
+  audit('batch.complete',b.name,null);toast('Moved to history.');await loadOps();rBatches();
+}
+async function reopenBatch(id){
+  const {error}=await DB.from('batches').update({status:'active',completed_at:null}).eq('id',id);
+  if(error)return toast('DB error: '+error.message,true);
+  await loadOps();rBatches();}
+
+/* trainer manager (Identity tab) */
+function editTrainer(i){
+  const t=i<0?{name:'',type:'ft',status:'active'}:OPS.trainers[i];
+  const slots=i<0?[]:OPS.slots.filter(x=>x.trainer_id===t.id);
+  openSheet(`<h2>${i<0?'Add trainer':'Edit · '+esc(t.name)}</h2>
+  <div class="fld"><label>Name</label><input id="t_name" value="${esc(t.name)}"/></div>
+  <div class="grid2">
+   <div class="fld"><label>Type</label><select id="t_type" onchange="$('ftBox').style.display=this.value==='ft'?'':'none'">
+     <option value="ft" ${t.type!=='pt'?'selected':''}>Full-time</option><option value="pt" ${t.type==='pt'?'selected':''}>Part-time</option></select></div>
+   <div class="fld"><label>Status</label><select id="t_status"><option ${t.status!=='inactive'?'selected':''}>active</option><option ${t.status==='inactive'?'selected':''}>inactive</option></select></div>
+  </div>
+  <div id="ftBox" style="display:${t.type==='pt'?'none':''}">
+   <div class="grid2">
+    <div class="fld"><label>Work start</label><input id="t_ws" value="${esc(t.work_start||'')}" placeholder="10:00 AM"/></div>
+    <div class="fld"><label>Work end</label><input id="t_we" value="${esc(t.work_end||'')}" placeholder="7:00 PM"/></div>
+   </div>
+   <div class="fld"><label>Weekly hours — overtime = clocked hours above this (Phase 3)</label><input type="number" id="t_wh" value="${t.weekly_hours||''}"/></div>
+  </div>
+  <div id="ptBox">
+   <div class="eb" style="margin-bottom:8px">Weekly time slots · free ○ feed the sales slot board (works for FT and PT)</div>
+   <table class="list"><tbody id="slotBody">${slots.map(slotRow).join('')}</tbody></table>
+   <button class="btn2" style="margin-top:8px" onclick="$('slotBody').insertAdjacentHTML('beforeend',slotRow({}))"><i class="ti ti-plus"></i> Add slot</button>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn2" onclick="closeSheet()">Cancel</button><button class="btn" onclick="saveTrainer(${i})">Save</button></div>`);
+}
+function slotRow(sl){return `<tr>
+ <td><select data-f="wd" style="min-width:70px">${DAYS.map(d=>`<option ${d===(sl.weekday||'Mon')?'selected':''}>${d}</option>`).join('')}</select></td>
+ <td><input data-f="st" value="${esc(sl.start_time||'')}" placeholder="6 PM" style="width:76px"/></td>
+ <td><input data-f="en" value="${esc(sl.end_time||'')}" placeholder="7 PM" style="width:76px"/></td>
+ <td><label style="font-size:10px;white-space:nowrap"><input type="checkbox" data-f="bk" ${sl.booked?'checked':''}/> booked</label></td>
+ <td><input data-f="ch" value="${esc(sl.course_hint||'')}" placeholder="course" style="width:90px"/></td>
+ <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`;}
+async function saveTrainer(i){
+  const rec={name:$('t_name').value.trim(),type:$('t_type').value,status:$('t_status').value,
+   work_start:$('t_ws').value.trim()||null,work_end:$('t_we').value.trim()||null,weekly_hours:+$('t_wh').value||null};
+  if(!rec.name)return toast('Name required.',true);
+  let id=i<0?null:OPS.trainers[i].id,error;
+  if(i<0){const r=await DB.from('trainers').insert({...rec,added_by:ME.username}).select().single();error=r.error;id=r.data?.id;}
+  else ({error}=await DB.from('trainers').update(rec).eq('id',id));
+  if(error)return toast('DB error: '+error.message,true);
+  if(id){
+    const rows=[...document.querySelectorAll('#slotBody tr')].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
+      return {trainer_id:id,weekday:g('wd').value,start_time:g('st').value.trim(),end_time:g('en').value.trim(),booked:g('bk').checked,course_hint:g('ch').value.trim()||null};})
+      .filter(x=>x.start_time&&x.end_time);
+    await DB.from('trainer_slots').delete().eq('trainer_id',id);
+    if(rows.length){const {error:e2}=await DB.from('trainer_slots').insert(rows);if(e2)return toast('Slots error: '+e2.message,true);}
+  }
+  audit('trainer.save',rec.name,rec);closeSheet();toast('Saved — live.');await loadOps();rTeam();
+}
+
+/* ═══════════ TAB 3 · DATA SOURCES ═══════════ */
+function rSources(){
+  const s=CFG['sources.sheets']||{};
+  const F=(k,l)=>`<div class="fld"><label>${l}</label>
+    <div class="row"><span class="src-light" id="li_${k}"></span>
+    <input id="src_${k}" value="${esc(s[k]||'')}"/>
+    <button class="btn2" onclick="testSheet('${k}')">Test</button></div></div>`;
+  $('tabBody').innerHTML=`
+  <div class="panel sect">
+    <div class="eb">Google Sheet IDs ${badge('sources.sheets')}</div>
+    ${F('master','Master Student List')}${F('assess','Assessment / Leads')}${F('schedule','Trainer Weekly Schedule')}${F('tracker','Batch/Session Tracker')}
+    <button class="btn" onclick="saveSources()"><i class="ti ti-device-floppy"></i> Save sheet IDs</button>
+    <div class="hint" style="margin-top:10px">Test = fetches the sheet's gviz CSV (first tab). Sheet must be shared "anyone with link". Green = readable right now.</div>
+  </div>
+  <div class="panel sect">
+    <div class="eb">More sheets · leads, follow-ups, revenue, anything ${badge('sources.extra')}</div>
+    <table class="list"><thead><tr><th></th><th>Label</th><th>Sheet ID (or full URL)</th><th>Department</th><th></th></tr></thead>
+    <tbody id="extraBody">${(CFG['sources.extra']||[]).map((x,i)=>extraRow(x,i)).join('')}</tbody></table>
+    <div class="row" style="margin-top:12px">
+      <button class="btn2" onclick="addExtra()"><i class="ti ti-plus"></i> Add sheet</button>
+      <button class="btn" onclick="saveExtra()"><i class="ti ti-device-floppy"></i> Save sheets</button>
+    </div>
+    <div class="hint" style="margin-top:10px">Must be Google <b>Sheets</b> (not Docs) shared "anyone with link". Sales team's incoming-leads + follow-up trackers go here under Sales — they surface on the founder deck in the wiring pass. Paste a full URL and the ID is extracted on save.</div>
+  </div>
+  <div class="panel sect">
+    <div class="eb">Supabase backends (read-only here)</div>
+    <div class="hint">Academics/auth: <b>baazubvfsrpmbfmrzumw</b> · Media: <b>fevqnpllmarhoqdzpatq</b>. Changing these means editing the constants in index/academics/admin — deliberately not editable from a public page.</div>
+  </div>`;
+}
+function addDept(){$('deptBody').insertAdjacentHTML('beforeend',`<tr>
+  <td><input data-f="name" placeholder="e.g. HR" style="min-width:150px"/></td>
+  <td><input type="color" data-f="color" value="#ffc24b"/></td>
+  <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`);}
+function saveDepts(){
+  const rows=[...$('deptBody').children].map(tr=>({name:tr.querySelector('[data-f=name]').value.trim(),color:tr.querySelector('[data-f=color]').value})).filter(d=>d.name);
+  if(!rows.length)return toast('Need at least one department.',true);
+  saveCfg('team.departments',rows);
+}
+function extraRow(x,i){
+  const depts=(CFG['team.departments']||[]).map(d=>d.name);
+  return `<tr>
+   <td><span class="src-light" id="xli_${i}"></span></td>
+   <td><input data-f="label" value="${esc(x.label||'')}" placeholder="Incoming leads" style="min-width:130px"/></td>
+   <td><div class="row"><input data-f="sheet" value="${esc(x.sheet||'')}" placeholder="1AbC… or URL" style="min-width:220px"/>
+     <button class="btn2" onclick="testExtra(this,${i})">Test</button></div></td>
+   <td><select data-f="dept">${depts.map(d=>`<option ${d===(x.dept||'')?'selected':''}>${esc(d)}</option>`).join('')}</select></td>
+   <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`;
+}
+function addExtra(){$('extraBody').insertAdjacentHTML('beforeend',extraRow({},Date.now()));}
+function sheetIdOf(v){const m=String(v).match(/\/d\/([a-zA-Z0-9_-]{20,})/);return m?m[1]:String(v).trim();}
+async function testExtra(btn,i){
+  const tr=btn.closest('tr'),id=sheetIdOf(tr.querySelector('[data-f=sheet]').value),li=tr.querySelector('.src-light');
+  li.className='src-light';
+  try{const r=await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`);const t=await r.text();
+    const ok=r.ok&&t.split('\n').length>1;li.className='src-light '+(ok?'ok':'fail');
+    toast(ok?`Readable · ${t.split('\n').length} rows.`:'Fetch failed — check ID & sharing.',!ok);
+  }catch(_){li.className='src-light fail';toast('Fetch failed — check ID & sharing.',true);}
+}
+function saveExtra(){
+  const rows=[...$('extraBody').children].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
+    return {label:g('label').value.trim(),sheet:sheetIdOf(g('sheet').value),dept:g('dept').value};})
+    .filter(x=>x.label&&x.sheet);
+  saveCfg('sources.extra',rows);
+}
+async function testSheet(k){
+  const id=$('src_'+k).value.trim(),li=$('li_'+k);li.className='src-light';
+  if(!id)return li.className='src-light fail';
+  try{
+    const r=await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`);
+    const t=await r.text();
+    li.className='src-light '+((r.ok&&t.split('\n').length>1)?'ok':'fail');
+    toast(li.className.includes('ok')?`Readable · ${t.split('\n').length} rows in first tab.`:'Fetch failed — check ID & sharing.',!li.className.includes('ok'));
+  }catch(_){li.className='src-light fail';toast('Fetch failed — check ID & sharing.',true);}
+}
+function saveSources(){
+  saveCfg('sources.sheets',{master:$('src_master').value.trim(),assess:$('src_assess').value.trim(),schedule:$('src_schedule').value.trim(),tracker:$('src_tracker').value.trim()});
+}
+
+/* ═══════════ TAB 4 · VISUAL & GLOBE ═══════════ */
+function cityRows(list,pfx){
+  return list.map((c,i)=>`<tr>
+    <td><input data-p="${pfx}" data-f="label" value="${esc(c.label||'')}" style="min-width:110px"/></td>
+    <td><input type="number" step="0.01" data-p="${pfx}" data-f="lat" value="${c.lat}" style="width:86px"/></td>
+    <td><input type="number" step="0.01" data-p="${pfx}" data-f="lng" value="${c.lng}" style="width:86px"/></td>
+    <td><button class="btn-danger" onclick="this.closest('tr').remove()"><i class="ti ti-trash"></i></button></td></tr>`).join('');
+}
+function rGlobe(){
+  const g=CFG['globe.settings']||{};
+  $('tabBody').innerHTML=`
+  <div class="panel sect">
+    <div class="eb">Globe behaviour ${badge('globe.settings')}</div>
+    <div class="grid2">
+      <div>
+        <div class="fld"><label><input type="checkbox" id="g_boot" ${g.boot!==false?'checked':''}/> Cinematic boot sequence on load</label></div>
+        <div class="fld"><label>Auto-rotate speed (default .55)</label><input type="number" step="0.05" id="g_rot" value="${g.rotate??.55}"/></div>
+        <div class="fld"><label>Arc animation time ms (default 1700)</label><input type="number" id="g_arc" value="${g.arcTime??1700}"/></div>
+        <div class="fld"><label>Point size (default .35)</label><input type="number" step="0.05" id="g_pt" value="${g.pointSize??.35}"/></div>
+        <div class="fld"><label>Atmosphere color</label><input type="color" id="g_atm" value="${esc(g.atmosphere||'#4d9fff')}"/></div>
+      </div>
+      <div class="hint">These map 1:1 to the Globe.gl calls in the founder deck (<b>autoRotateSpeed</b>, <b>arcDashAnimateTime</b>, <b>pointRadius</b>, <b>atmosphereColor</b>, boot on/off). Stored now; the deck reads <b>globe.settings</b> in the wiring pass.</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel sect"><div class="eb" style="color:#ed6d8d">Network cities · red (Gulf + India)</div>
+      <table class="list"><thead><tr><th>City</th><th>Lat</th><th>Lng</th><th></th></tr></thead><tbody id="redBody">${cityRows(g.red||[],'red')}</tbody></table>
+      <button class="btn2" style="margin-top:10px" onclick="addCity('redBody','red')"><i class="ti ti-plus"></i> Add city</button></div>
+    <div class="panel sect"><div class="eb" style="color:#7db6ff">Network cities · blue (global)</div>
+      <table class="list"><thead><tr><th>City</th><th>Lat</th><th>Lng</th><th></th></tr></thead><tbody id="blueBody">${cityRows(g.blue||[],'blue')}</tbody></table>
+      <button class="btn2" style="margin-top:10px" onclick="addCity('blueBody','blue')"><i class="ti ti-plus"></i> Add city</button></div>
+  </div>
+  <div style="margin-top:14px"><button class="btn" onclick="saveGlobe()"><i class="ti ti-device-floppy"></i> Save globe settings</button></div>`;
+}
+function addCity(tb,p){$(tb).insertAdjacentHTML('beforeend',cityRows([{label:'',lat:0,lng:0}],p));}
+function saveGlobe(){
+  const grab=tb=>[...$(tb).children].map(tr=>{const g=f=>tr.querySelector(`[data-f=${f}]`);
+    return {label:g('label').value.trim(),lat:+g('lat').value,lng:+g('lng').value};})
+    .filter(c=>c.label&&isFinite(c.lat)&&isFinite(c.lng));
+  saveCfg('globe.settings',{boot:$('g_boot').checked,rotate:+$('g_rot').value||.55,arcTime:+$('g_arc').value||1700,
+    pointSize:+$('g_pt').value||.35,atmosphere:$('g_atm').value,red:grab('redBody'),blue:grab('blueBody')});
+}
+
+/* ═══════════ TAB 5 · CONTENT ═══════════ */
+function rContent(){
+  const c=CFG['content.settings']||{},dc=c.deptCards||{};
+  $('tabBody').innerHTML=`
+  <div class="panel sect">
+    <div class="eb">Deck content ${badge('content.settings')}</div>
+    <div class="grid2"><div>
+      <div class="fld"><label>Mission target (Mission 1000 ring)</label><input type="number" id="c_target" value="${c.missionTarget??1000}"/></div>
+      <div class="fld"><label>Deck tagline</label><input id="c_tag" value="${esc(c.tagline||'')}"/></div>
+      <div class="fld"><label>Dept command cards shown</label><div class="row" style="flex-wrap:wrap;gap:14px;margin-top:4px">
+        ${['academics','sales','media','projects'].map(k=>`<label style="font-size:12px"><input type="checkbox" id="dc_${k}" ${dc[k]!==false?'checked':''}/> ${k}</label>`).join('')}</div></div>
+    </div><div>
+      <div class="fld"><label>Launch links (label | url per line)</label>
+      <textarea id="c_links" rows="5">${esc((c.links||[]).map(l=>`${l.label} | ${l.url}`).join('\n'))}</textarea></div>
+    </div></div>
+    <button class="btn" onclick="saveContent()"><i class="ti ti-device-floppy"></i> Save content</button>
+  </div>`;
+}
+function saveContent(){
+  const links=$('c_links').value.split('\n').map(l=>l.split('|')).filter(a=>a.length>=2)
+    .map(a=>({label:a[0].trim(),url:a.slice(1).join('|').trim()})).filter(l=>l.label&&l.url);
+  const deptCards={};['academics','sales','media','projects'].forEach(k=>deptCards[k]=$('dc_'+k).checked);
+  saveCfg('content.settings',{missionTarget:+$('c_target').value||1000,tagline:$('c_tag').value.trim(),links,deptCards});
+}
+
+/* ═══════════ TAB 6 · SALES STRATEGY ═══════════ */
+function rSales(){
+  const s=CFG['sales.keywords']||{};
+  const F=(k,l)=>`<div class="fld"><label>${l} — comma-separated keywords matched against the lead "status" text</label>
+    <input id="kw_${k}" value="${esc((s[k]||[]).join(', '))}"/></div>`;
+  $('tabBody').innerHTML=`
+  <div class="panel sect">
+    <div class="eb">Funnel stage buckets ${badge('sales.keywords')}</div>
+    ${F('contacted','Contacted')}${F('interested','Interested')}${F('demo','Demo / Assessment')}
+    <div class="fld"><label>Counsellor roster (comma-separated)</label><input id="kw_couns" value="${esc((s.counsellors||[]).join(', '))}"/></div>
+    <button class="btn" onclick="saveSales()"><i class="ti ti-device-floppy"></i> Save sales strategy</button>
+    <div class="hint" style="margin-top:10px">Enrolled stage always comes from the Master Student List total — not keyword-driven, so it can't be faked from here.</div>
+  </div>`;
+}
+function saveSales(){
+  const P=id=>$(id).value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+  saveCfg('sales.keywords',{contacted:P('kw_contacted'),interested:P('kw_interested'),demo:P('kw_demo'),
+    counsellors:$('kw_couns').value.split(',').map(x=>x.trim()).filter(Boolean)});
+}
+
+trySSO();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
