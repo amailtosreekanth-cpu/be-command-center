@@ -170,12 +170,6 @@ details[open] .rawsum::before{content:'▾ '}
     </div>
   </div>
 
-  <!-- Google Sheets disconnected — database is the single source of truth -->
-  <div class="section">
-    <h2>Media / Production Suite</h2>
-    <div class="warn-box"><b>Heads up:</b> Production Suite is a static site, not a database — there's nothing to "pull" from it via API. I can link to it directly, or if you want real live media stats here (videos edited, reels pending, etc.), that data needs to live in a Google Sheet or Supabase table like Academics does. Tell me which and I'll wire it.</div>
-    <a href="https://mediabrkn01-crypto.github.io/Production-Suite/" target="_blank" class="act-btn" style="display:inline-block">Open Production Suite →</a>
-  </div>
 </div>
 
 <div class="modal-bg" id="modalTrainer"><div class="modal">
@@ -622,9 +616,6 @@ async function saveSession(){
 }
 
 // ══ LIVE GOOGLE SHEET FETCH — renders real rows as pictorial cards ══
-function sheetCsvUrl(id){
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
-}
 
 function renderSheetTable(targetId, rows, maxRows=15){
   const el = document.getElementById(targetId);
