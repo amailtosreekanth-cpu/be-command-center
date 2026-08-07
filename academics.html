@@ -210,6 +210,7 @@ details[open] .rawsum::before{content:'▾ '}
 
 <div class="modal-bg" id="modalBatch"><div class="modal" style="width:440px">
   <h3>Create Batch</h3>
+  <div class="mhint" style="margin-bottom:10px">Pick the course first — it fills sessions, days &amp; capacity. Then tick students at the bottom.</div>
   <input id="m_b_name" placeholder="Batch name (e.g. Phrase Factory)"/>
   <select id="m_b_trainer"></select>
   <select id="m_b_type" onchange="typeChanged()"></select>
@@ -224,8 +225,8 @@ details[open] .rawsum::before{content:'▾ '}
     <input id="m_b_sessions" type="number" placeholder="Total sessions"/>
     <input id="m_b_cap" type="number" placeholder="Max students"/>
   </div>
-  <input id="m_b_start" type="date" title="Batch start date (optional)"/>
-  <div class="mhint">Start below capacity if you like — you can add more students anytime.</div>
+  <label class="lv-field lv-grow" style="margin-bottom:6px"><span>Batch start date — first class day (not enrolment date)</span><input id="m_b_start" type="date"/></label>
+  <div class="mhint">Start below capacity if you like — you can add more students anytime via Edit.</div>
   <div class="subhead" style="margin:10px 0 8px">Add registered students (unassigned)</div>
   <div id="m_b_students" class="pick-list"><div class="mhint" style="padding:8px">Pick a course above to see students registered for it.</div></div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batch')">Cancel</button><button class="btn-save" onclick="saveBatch()">Save</button></div>
@@ -287,6 +288,7 @@ details[open] .rawsum::before{content:'▾ '}
 
 <div class="modal-bg" id="modalStudent"><div class="modal" style="width:460px">
   <h3>Add Student · manual entry</h3>
+  <div class="mhint" style="margin-bottom:10px">Only the name is required. Pick a course to auto-fill the fee. Enrolment date = the first payment date. Leave batch blank to add them later from the batch.</div>
   <input id="s_name" placeholder="Student name *"/>
   <div class="mrow"><input id="s_uin" placeholder="Student ID (blank = auto)"/><input id="s_contact" placeholder="Contact number"/></div>
   <div class="mrow">
@@ -756,7 +758,7 @@ function typeChanged(){
 }
 /* ── unassigned-student helpers (assign registered students to batches) ── */
 async function unassignedStudents(courseName){
-  const {data}=await sb.from('students').select('id,name,uin,programme,batch_name,batch_id,preferred_slot').is('batch_id',null);
+  const {data}=await sb.from('students').select('*').is('batch_id',null);
   let rows=(data||[]).filter(s=>!s.batch_name||s.batch_name==='Unassigned'||s.batch_name==='');
   if(courseName)rows=rows.filter(s=>(s.programme||'')===courseName);
   return rows.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
@@ -784,7 +786,7 @@ async function openBatchEdit(id){
   const {data:trs}=await sb.from('trainers').select('id,name').eq('status','active');
   document.getElementById('be_trainer').innerHTML='<option value="">— trainer —</option>'+(trs||[]).map(t=>'<option value="'+t.id+'"'+(t.id===b.trainer_id?' selected':'')+'>'+esc(t.name)+'</option>').join('');
   document.getElementById('be_cap').value=b.capacity||'';
-  const {data:cur}=await sb.from('students').select('id,name,uin,preferred_slot').eq('batch_id',id);
+  const {data:cur}=await sb.from('students').select('*').eq('batch_id',id);
   document.getElementById('be_current').innerHTML=(cur&&cur.length)?cur.map(s=>'<label class="pick-row"><input type="checkbox" checked value="'+s.id+'"><span>'+esc(s.name)+(s.uin?' · '+esc(s.uin):'')+'</span>'+(s.preferred_slot?'<span class="pm">'+esc(s.preferred_slot)+'</span>':'')+'</label>').join(''):'<div class="mhint" style="padding:8px">No students in this batch yet.</div>';
   let pool=await unassignedStudents(b.programme||null);
   if(!pool.length)pool=await unassignedStudents(null);
@@ -971,10 +973,12 @@ async function saveStuMove(){
 async function openStu(i,j){
   if(!requireHeadAccess())return;
   const b=window._liveBatches[i];if(!b)return;const s=b.students[j];if(!s)return;_stu=s;
+  try{const {data:full}=await sb.from('students').select('*').eq('id',s.id).maybeSingle();if(full)Object.assign(s,full);}catch(e){}
   document.getElementById('stu_name').textContent=s.name;
   document.getElementById('stu_info').innerHTML='<div class="stu-grid">'
     +'<span class="k">Student ID</span><span class="v">'+esc(s.uin||'—')+'</span>'
     +'<span class="k">Contact</span><span class="v">'+esc(s.contact||'—')+'</span>'
+    +'<span class="k">Preferred slot</span><span class="v">'+esc(s.preferred_slot||'—')+'</span>'
     +'<span class="k">Course</span><span class="v">'+esc(s.programme||'—')+'</span>'
     +'<span class="k">Batch</span><span class="v">'+esc(s.batch_name||'—')+'</span>'
     +'<span class="k">Trainer</span><span class="v">'+esc(s.trainer_name||'—')+'</span>'
