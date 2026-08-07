@@ -88,6 +88,11 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .stu-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12.5px;margin-bottom:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:12px;}
 .stu-grid .k{color:var(--tx3);text-transform:uppercase;font-size:9.5px;letter-spacing:.07em;align-self:center;}
 .stu-grid .v{color:var(--tx);font-weight:600;}
+.pick-list{max-height:170px;overflow:auto;border:1px solid var(--bd);border-radius:11px;padding:6px;margin-bottom:6px;}
+.pick-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;}
+.pick-row:hover{background:rgba(255,255,255,.03);}
+.pick-row input{width:auto;margin:0;accent-color:var(--k1);}
+.pick-row .pm{color:var(--tx3);font-size:11px;margin-left:auto;}
 
 .daychips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
 .dchip{padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;user-select:none;transition:all .15s}
@@ -221,7 +226,21 @@ details[open] .rawsum::before{content:'▾ '}
   </div>
   <input id="m_b_start" type="date" title="Batch start date (optional)"/>
   <div class="mhint">Start below capacity if you like — you can add more students anytime.</div>
+  <div class="subhead" style="margin:10px 0 8px">Add registered students (unassigned)</div>
+  <div id="m_b_students" class="pick-list"><div class="mhint" style="padding:8px">Pick a course above to see students registered for it.</div></div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batch')">Cancel</button><button class="btn-save" onclick="saveBatch()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="modalBatchEdit"><div class="modal" style="width:480px;max-height:88vh;overflow:auto">
+  <h3 id="be_title">Edit Batch</h3>
+  <select id="be_trainer"></select>
+  <input id="be_cap" type="number" placeholder="Max students (capacity)"/>
+  <div class="subhead" style="margin:12px 0 8px">Students in this batch</div>
+  <div id="be_current" class="pick-list"></div>
+  <div class="subhead" style="margin:12px 0 8px">Add unassigned students</div>
+  <div id="be_pool" class="pick-list"></div>
+  <div class="mhint">Tick to add. Untick a current student to remove them (back to Unassigned).</div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal('batchEdit')">Cancel</button><button class="btn-save" onclick="saveBatchEdit()">Save Changes</button></div>
 </div></div>
 
 <div class="modal-bg" id="modalCourse"><div class="modal" style="width:460px">
@@ -278,6 +297,7 @@ details[open] .rawsum::before{content:'▾ '}
     <select id="s_prog" onchange="studentCourseChanged()"><option value="">Course / programme…</option></select>
     <select id="s_counsellor"><option value="">Counsellor / sales…</option></select>
   </div>
+  <input id="s_slot" placeholder="Preferred time slot (e.g. 8–9 PM)"/>
   <div class="mrow">
     <label class="lv-field lv-grow"><span>Enrolment date</span><input id="s_enroll" type="date"/></label>
     <label class="lv-field lv-grow"><span>Planned end</span><input id="s_end" type="date"/></label>
@@ -301,6 +321,12 @@ details[open] .rawsum::before{content:'▾ '}
     <select id="stu_status" style="max-width:180px"><option>In Progress</option><option>Upcoming</option><option>On Freeze</option><option>Completed</option><option>Dropped</option></select>
     <button class="act-btn" onclick="saveStuStatus()">Update</button></div>
   <div id="stu_att" style="font-size:12px;margin-bottom:12px;color:#7db6ff"></div>
+  <div class="subhead" style="margin:4px 0 8px">Move / reassign</div>
+  <div class="mrow" style="align-items:center;gap:8px;flex-wrap:wrap">
+    <select id="stu_move_batch" style="max-width:190px"></select>
+    <select id="stu_move_course" style="max-width:160px"></select>
+    <button class="act-btn" onclick="saveStuMove()">Move</button>
+  </div>
   <h3 style="font-size:14px;margin-top:4px">Payments</h3>
   <div class="mrow"><input id="p_fee" type="number" placeholder="Course fee ₹"/><input id="p_disc" type="number" placeholder="Discount ₹"/></div>
   <div class="mrow"><input id="p_discby" placeholder="Discount given by (sales)"/><input id="p_due" type="date" title="Next payment due"/></div>
@@ -529,7 +555,7 @@ async function loadHeadView(){
     return `<tr><td>${esc(b.name)}</td><td>${b.trainers?.name||'—'}</td><td>${b.day_pattern||''} ${b.time_slot||''}</td>
     <td>${esc(cn)}${b.sessions_total?' · '+b.sessions_total+'s':''}</td>
     <td style="color:${seatCol}">${seats}</td>
-    <td><button class="act-btn" onclick="deleteBatch('${b.id}','${esc(b.name)}')">Delete</button></td></tr>`;
+    <td><button class="act-btn" onclick="openBatchEdit('${b.id}')">Edit</button> <button class="act-btn" onclick="deleteBatch('${b.id}','${esc(b.name)}')">Delete</button></td></tr>`;
   }).join('') || '<tr><td colspan="6" class="empty">No batches yet</td></tr>';
 
   const { data: assigns } = await sb.from('assignments').select('*, trainers(name)').order('created_at',{ascending:false});
@@ -717,7 +743,7 @@ function typeChanged(){
   const sess=document.getElementById('m_b_sessions');
   const cap=document.getElementById('m_b_cap');
   const mc=document.getElementById('m_b_mc');
-  if(!c){hint.textContent='Define a course first — batches are built from courses.';return;}
+  if(!c){hint.textContent='Define a course first — batches are built from courses.';document.getElementById('m_b_students').innerHTML='<div class="mhint" style="padding:8px">Pick a course above to see students registered for it.</div>';return;}
   hint.textContent=(c.sessions_total?c.sessions_total+' sessions':'')
     +(c.duration_days?' · '+c.duration_days+' days':'')
     +(c.type==='one-on-one'?' · 1:1':(c.max_students?' · up to '+c.max_students+' students':''));
@@ -726,6 +752,59 @@ function typeChanged(){
   const def=(c.default_days||'').split(/[,\s]+/).filter(Boolean);
   document.querySelectorAll('#m_b_days .dchip').forEach(ch=>ch.classList.toggle('on',def.includes(ch.dataset.d)));
   if(c.mc_day!=null)mc.value=c.mc_day;
+  loadBatchPool(c.name);
+}
+/* ── unassigned-student helpers (assign registered students to batches) ── */
+async function unassignedStudents(courseName){
+  const {data}=await sb.from('students').select('id,name,uin,programme,batch_name,batch_id,preferred_slot').is('batch_id',null);
+  let rows=(data||[]).filter(s=>!s.batch_name||s.batch_name==='Unassigned'||s.batch_name==='');
+  if(courseName)rows=rows.filter(s=>(s.programme||'')===courseName);
+  return rows.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function pickRow(s){
+  const slot=s.preferred_slot?'<span class="pm">'+esc(s.preferred_slot)+'</span>':(s.programme?'<span class="pm">'+esc(s.programme)+'</span>':'');
+  return '<label class="pick-row"><input type="checkbox" value="'+s.id+'"><span>'+esc(s.name)+(s.uin?' · '+esc(s.uin):'')+'</span>'+slot+'</label>';
+}
+async function loadBatchPool(courseName){
+  const el=document.getElementById('m_b_students');if(!el)return;
+  el.innerHTML='<div class="mhint" style="padding:8px">Loading…</div>';
+  const rows=await unassignedStudents(courseName);
+  el.innerHTML=rows.length?rows.map(pickRow).join(''):'<div class="mhint" style="padding:8px">No unassigned students registered for this course. Add students first, or leave empty and add later.</div>';
+}
+async function assignStudents(ids,batch){
+  if(!ids||!ids.length)return;
+  await sb.from('students').update({batch_id:batch.id,batch_name:batch.name,trainer_name:batch.trainer_name||null}).in('id',ids);
+}
+let _editBatch=null;
+async function openBatchEdit(id){
+  if(!requireHeadAccess())return;
+  const {data:b}=await sb.from('batches').select('*').eq('id',id).single();
+  if(!b)return;_editBatch=b;
+  document.getElementById('be_title').textContent='Edit Batch · '+b.name;
+  const {data:trs}=await sb.from('trainers').select('id,name').eq('status','active');
+  document.getElementById('be_trainer').innerHTML='<option value="">— trainer —</option>'+(trs||[]).map(t=>'<option value="'+t.id+'"'+(t.id===b.trainer_id?' selected':'')+'>'+esc(t.name)+'</option>').join('');
+  document.getElementById('be_cap').value=b.capacity||'';
+  const {data:cur}=await sb.from('students').select('id,name,uin,preferred_slot').eq('batch_id',id);
+  document.getElementById('be_current').innerHTML=(cur&&cur.length)?cur.map(s=>'<label class="pick-row"><input type="checkbox" checked value="'+s.id+'"><span>'+esc(s.name)+(s.uin?' · '+esc(s.uin):'')+'</span>'+(s.preferred_slot?'<span class="pm">'+esc(s.preferred_slot)+'</span>':'')+'</label>').join(''):'<div class="mhint" style="padding:8px">No students in this batch yet.</div>';
+  let pool=await unassignedStudents(b.programme||null);
+  if(!pool.length)pool=await unassignedStudents(null);
+  document.getElementById('be_pool').innerHTML=pool.length?pool.map(pickRow).join(''):'<div class="mhint" style="padding:8px">No unassigned students available.</div>';
+  document.getElementById('modalBatchEdit').classList.add('on');
+}
+async function saveBatchEdit(){
+  if(!requireHeadAccess())return;const b=_editBatch;if(!b)return;
+  const trSel=document.getElementById('be_trainer');
+  const trainer_id=trSel.value||null;
+  const trainer_name=trSel.value?((trSel.options[trSel.selectedIndex]||{}).text||null):null;
+  const capacity=parseInt(document.getElementById('be_cap').value)||null;
+  await sb.from('batches').update({trainer_id,trainer_name,capacity}).eq('id',b.id);
+  const removeIds=[...document.querySelectorAll('#be_current input:not(:checked)')].map(x=>x.value);
+  const addIds=[...document.querySelectorAll('#be_pool input:checked')].map(x=>x.value);
+  if(removeIds.length)await sb.from('students').update({batch_id:null,batch_name:'Unassigned'}).in('id',removeIds);
+  if(addIds.length)await assignStudents(addIds,{id:b.id,name:b.name,trainer_name});
+  await sb.from('students').update({trainer_name}).eq('batch_id',b.id);
+  closeModal('batchEdit');
+  await loadHeadView();await loadStats();await loadLive();
 }
 async function saveBatch(){
   if (!requireHeadAccess()) return;
@@ -743,12 +822,17 @@ async function saveBatch(){
   if(!course_id){alert('Pick a course. Define one in the Courses section first.');return;}
   if(!days.length){alert('Pick at least one class day.');return;}
   const day_pattern=days.join(', ')+(mc?` · MC ${mc}`:'');
-  const rec={ name, trainer_id, course_id, day_pattern, time_slot, sessions_total, capacity, start_date, batch_type:(c?(c.code||c.name):null), status:'active' };
-  const {error}=await sb.from('batches').insert(rec);
+  const trainerSel=document.getElementById('m_b_trainer');
+  const trainer_name=trainerSel.value?((trainerSel.options[trainerSel.selectedIndex]||{}).text||null):null;
+  const rec={ name, trainer_id, trainer_name, course_id, programme:(c?c.name:null), day_pattern, time_slot, sessions_total, capacity, start_date, batch_type:(c?(c.code||c.name):null), status:'active' };
+  const {data:newBatch,error}=await sb.from('batches').insert(rec).select().single();
   if(error){alert('Save failed: '+error.message);return;}
+  const picked=[...document.querySelectorAll('#m_b_students input:checked')].map(x=>x.value);
+  if(picked.length)await assignStudents(picked,newBatch);
   closeModal('batch'); document.getElementById('m_b_name').value=''; document.getElementById('m_b_time').value=''; document.getElementById('m_b_start').value='';
   document.querySelectorAll('#m_b_days .dchip.on').forEach(x=>x.classList.remove('on'));
-  await loadHeadView(); await loadStats();
+  document.getElementById('m_b_students').innerHTML='';
+  await loadHeadView(); await loadStats(); await loadLive();
 }
 
 async function deleteBatch(id,name){
@@ -852,8 +936,9 @@ async function saveStudent(){
     }
   }
   const enroll=g('s_enroll')||new Date().toISOString().slice(0,10);
-  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:batchName,batch_id:batch_id,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null,source_counsellor:g('s_counsellor')||null,enrolled_date:enroll};
-  const {data,error}=await sb.from('students').insert(rec).select().single();
+  const rec={uin:uin,name:name,contact:g('s_contact')||null,batch_name:batchName,batch_id:batch_id,trainer_name:g('s_trainer')||null,programme:g('s_prog')||null,status:g('s_status')||'In Progress',planned_end_date:g('s_end')||null,source_counsellor:g('s_counsellor')||null,enrolled_date:enroll,preferred_slot:g('s_slot')||null};
+  let {data,error}=await sb.from('students').insert(rec).select().single();
+  if(error&&/preferred_slot/.test(error.message||'')){delete rec.preferred_slot;({data,error}=await sb.from('students').insert(rec).select().single());}
   if(error){alert('Save failed: '+error.message);return;}
   const fee=parseFloat(g('s_fee'))||0;
   if(fee>0)await sb.from('payments').upsert({student_id:data.id,course_fee:fee},{onConflict:'student_id'});
@@ -870,6 +955,19 @@ async function saveStuStatus(){
   if(error){alert('Save failed: '+error.message);return;}
   s.status=v;alert('Status updated: '+s.name+' \u2192 '+v);loadLive();
 }
+async function saveStuMove(){
+  if(!requireHeadAccess())return;const s=_stu;if(!s||!s.id)return;
+  const bid=document.getElementById('stu_move_batch').value||null;
+  const course=document.getElementById('stu_move_course').value||null;
+  const upd={};
+  if(bid){const b=(window._moveBatches||[]).find(x=>x.id===bid);upd.batch_id=bid;upd.batch_name=b?b.name:null;if(b&&b.trainer_name)upd.trainer_name=b.trainer_name;}
+  else{upd.batch_id=null;upd.batch_name='Unassigned';}
+  if(course)upd.programme=course;
+  const {error}=await sb.from('students').update(upd).eq('id',s.id);
+  if(error){alert('Move failed: '+error.message);return;}
+  alert(s.name+' moved.');document.getElementById('modalStu').classList.remove('on');
+  loadLive();loadStats();
+}
 async function openStu(i,j){
   if(!requireHeadAccess())return;
   const b=window._liveBatches[i];if(!b)return;const s=b.students[j];if(!s)return;_stu=s;
@@ -885,6 +983,14 @@ async function openStu(i,j){
     +'<span class="k">Status</span><span class="v">'+esc(s.status||'—')+'</span>'
     +'</div>';
   var _ss=document.getElementById('stu_status');if(_ss)_ss.value=s.status||'In Progress';
+  (async()=>{
+    const {data:bs}=await sb.from('batches').select('id,name,trainer_name').order('name');
+    window._moveBatches=bs||[];
+    const mb=document.getElementById('stu_move_batch');
+    if(mb)mb.innerHTML='<option value="">— Unassigned —</option>'+(bs||[]).map(b=>'<option value="'+b.id+'"'+(b.id===s.batch_id?' selected':'')+'>'+esc(b.name)+'</option>').join('');
+    const mc=document.getElementById('stu_move_course');
+    if(mc)mc.innerHTML='<option value="">— keep course —</option>'+COURSE_ROWS.filter(c=>c.active!==false).map(c=>'<option value="'+esc(c.name)+'"'+((s.programme===c.name)?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+  })();
   document.getElementById('modalStu').classList.add('on');
   try{const {data:att}=await sb.from('attendance').select('status').eq('student_uin',s.uin);
     const p=(att||[]).filter(function(a){return a.status==='present';}).length,t=(att||[]).length;
